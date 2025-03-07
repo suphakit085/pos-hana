@@ -91,7 +91,7 @@ export default function TodayBookings() {
   }
 
   return (
-    <div className="container mx-auto py-2">
+    <div className="container mx-auto py-2 h-auto">
       <div className="grid gap-4">
         {bookings.map((booking) => (
           <Card key={booking.id} className="w-full">

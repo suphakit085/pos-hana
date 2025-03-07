@@ -13,7 +13,7 @@ function page() {
             </div>
             <div className="bg-white w-full xl:w-1/5 h-full rounded-3xl mt-3 xl:mt-0 xl:ml-3 p-4">
             <h1 className="text-3xl p-5 ">รายการจองวันนี้</h1>
-              <div className="max-h-[720px] overflow-y-auto">
+              <div className="max-h-[720px] h-fit overflow-y-auto">
                 <IncomingReserve />
               </div>
             </div>

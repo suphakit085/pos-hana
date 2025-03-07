@@ -1,26 +1,63 @@
 import Admintemplate from "@/components/Admintemplate"
 import CardOrder from "@/components/CardOrder"
-import { Button } from "@/components/ui/button"
+import FoodOrderTable from "@/components/FoodOrderTable";
+import { Button } from "@/components/ui/button";
+
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+const products = [
+  {
+    id: "1",
+    name: "เนื้อออสเตรเลีย",
+    remaining: "70",
+    unit: "KG",
+    min: "70",
+    status: "ปกติ",
+    dateupdate: "20-11-2025 18:00",
+  },
+  {
+    id: "2",
+    name: "เนื้อไก่",
+    remaining: "50",
+    unit: "KG",
+    min: "20",
+    status: "เหลือน้อย",
+    dateupdate: "20-11-2025 18:00",
+  },
+]
+
+function getStatusClass(status: string) {
+  switch (status) {
+    case "เสิร์ฟแล้ว":
+      return "bg-green-200";
+    case "เหลือน้อย":
+      return "bg-red-200";
+    default:
+      return "";
+  }
+}
+
+
 function Orderpage() {
   return (
     <>
-    <Admintemplate>
-        <div className="pt-5 pl-5 pb-0 flex items-center">
-        <button className="bg-[#FFB8B9] rounded-full py-4 px-8 mr-5 text-black hover:text-white hover:bg-[#FFB8DA]">
-                รอการดำเนินการ
-            </button>
-            <button className="bg-[#B8FFBD] rounded-full py-4 px-8 text-black hover:text-white hover:bg-[#FFB8DA]">
-                เสร็จสิ้น
-            </button>
+      <Admintemplate>
+        <div className='size-full p-10  flex items-center justify-center '>
+          <div className='bg-white size-full  rounded-3xl p-5'>
+          <FoodOrderTable />
+
+          </div>
         </div>
-        <div className="p-5 grid grid-cols-[repeat(auto-fit,minmax(400px,1fr))] gap-4">
-            <CardOrder />
-            <CardOrder />
-            <CardOrder />
-            <CardOrder />
-            <CardOrder />
-        </div>
-    </Admintemplate>
+      </Admintemplate>
     </>
   )
 }
