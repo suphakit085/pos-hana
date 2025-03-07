@@ -20,7 +20,13 @@ function TableClick({ tableId, tableStatus, customerCount, onClose, onOrderCreat
 
   // เปิด Modal และระบุประเภท
   const handleOpenModal = (action: string) => {
-    console.log(`Opening modal for action: ${action}`);
+    if (action === 'bill') {
+      // นำทางไปยังหน้าเช็คบิล
+      window.location.href = `/admin/tables/checkbill?tableId=${tableId}&customerCount=${customerCount}`;
+      onClose(); // ปิด TableClick
+      return;
+    }
+    
     setModalAction(action);
     setIsModalOpen(true);
   };

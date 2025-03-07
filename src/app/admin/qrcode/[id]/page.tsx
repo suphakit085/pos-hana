@@ -1,8 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { QrCode } from 'lucide-react';
-import { use } from 'react';
+import { Printer, ArrowLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card"; 
+import { QRCodeSVG } from 'qrcode.react';
 
 interface OrderData {
   orderID: number;
@@ -12,8 +14,9 @@ interface OrderData {
 }
 
 export default function QRCodePage({ params }: { params: { id: string } }) {
-  // ใช้ React.use สำหรับรุ่นใหม่ของ Next.js ที่ params เป็น Promise
-  const id = use(params).id;
+  // ใช้ params.id โดยตรง แต่ในอนาคตควรใช้ React.use()
+  // ตามคำแนะนำของ Next.js
+  const id = params.id;
   
   const router = useRouter();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
@@ -33,112 +36,107 @@ export default function QRCodePage({ params }: { params: { id: string } }) {
         const data = await response.json();
         console.log("Order data received:", data);
         setOrderData(data);
-      } catch (err) {
-        console.error("Error fetching order:", err);
-        setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      } catch (err: any) {
+        console.error("Error fetching order data:", err);
+        setError(err.message || "Failed to fetch order data");
       } finally {
         setLoading(false);
       }
     }
-
-    if (id) {
-      fetchOrderData();
-    } else {
-      setError("ไม่พบรหัสออเดอร์");
-      setLoading(false);
-    }
+    
+    fetchOrderData();
   }, [id]);
 
-  // ฟังก์ชันสำหรับการพิมพ์
+  // สร้าง URL สำหรับ QR Code
+  const getMenuUrl = () => {
+    if (!orderData) return '';
+    
+    // URL ที่จะแสดงในคิวอาร์โค้ด (URL ของหน้าเมนูสำหรับลูกค้า)
+    return `${window.location.origin}/user/menu/${orderData.orderItemId}`;
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
-  // ฟังก์ชันสำหรับการกลับไปหน้าโต๊ะ
   const handleGoBack = () => {
-    router.push('/admin/tables'); // หรือเปลี่ยนตาม URL ที่ต้องการ
+    router.back();
   };
 
-  // แสดงสถานะกำลังโหลด
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFB8DA] mx-auto"></div>
-          <p className="mt-4 text-lg">กำลังโหลดข้อมูล...</p>
+          <h2 className="text-2xl font-bold text-red-500 mb-4">เกิดข้อผิดพลาด</h2>
+          <p className="mb-4">{error}</p>
+          <Button onClick={handleGoBack}>กลับ</Button>
         </div>
       </div>
     );
   }
 
-  // แสดงข้อผิดพลาด
-  if (error) {
+  if (!orderData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-4">
-            <p>{error}</p>
-          </div>
-          <button 
-            onClick={handleGoBack}
-            className="px-4 py-2 bg-[#FFB8DA] text-white rounded-md hover:bg-[#fcc6e0]"
-          >
-            กลับไปหน้าโต๊ะ
-          </button>
+          <h2 className="text-2xl font-bold mb-4">ไม่พบข้อมูลออเดอร์</h2>
+          <Button onClick={handleGoBack}>กลับ</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-gray-800">QR Code สำหรับสั่งอาหาร</h1>
-          <button 
-            onClick={handleGoBack}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            กลับไปหน้าโต๊ะ
-          </button>
-        </div>
-        
-        <div className="p-6">
-          <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center">
-            {orderData ? (
-              <>
-                <div className="flex justify-center mb-6">
-                  <QrCode 
-                    values={`http://localhost:3000/user/menu/${orderData.orderItemId}`} 
-                    size={300} 
-                  />
-                </div>
-                <div className="mb-4">
-                  <h2 className="text-2xl font-bold text-gray-700">โต๊ะ {orderData.tabName || `T${orderData.Tables_tabID}`}</h2>
-                  <p className="text-gray-600 mt-1">รหัสออเดอร์: {orderData.orderID}</p>
-                </div>
-                <p className="text-gray-500 text-sm">สแกน QR Code เพื่อสั่งอาหาร</p>
-              </>
-            ) : (
-              <p className="py-10 text-gray-500">ไม่พบข้อมูล QR Code</p>
-            )}
-          </div>
-          
-          {orderData && (
-            <button
-              onClick={handlePrint}
-              className="w-full mt-6 bg-[#FFB8DA] text-white py-3 rounded-md hover:bg-[#fcc6e0] font-medium"
-            >
-              พิมพ์ QR Code
-            </button>
-          )}
+    <div className="container mx-auto p-4 max-w-2xl">
+      <div className="flex justify-between items-center mb-8">
+        <Button variant="outline" onClick={handleGoBack} className="flex items-center">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          กลับ
+        </Button>
+        <Button onClick={handlePrint} className="flex items-center">
+          <Printer className="mr-2 h-4 w-4" />
+          พิมพ์
+        </Button>
+      </div>
 
-          <div className="print:hidden mt-6">
-            <p className="text-sm text-gray-500 text-center">
-              คำแนะนำ: วาง QR Code นี้บนโต๊ะเพื่อให้ลูกค้าสแกนและสั่งอาหารได้สะดวก
+      <Card className="mb-8">
+        <CardContent className="p-6">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold mb-2">QR Code สำหรับสั่งอาหาร</h1>
+            <p className="text-gray-500">
+              โต๊ะ {orderData.tabName || `T${orderData.Tables_tabID.toString().padStart(2, '0')}`}
             </p>
           </div>
-        </div>
+
+          <div className="flex justify-center mb-6">
+            <div className="border p-4 inline-block">
+              <QRCodeSVG 
+                value={getMenuUrl()}
+                size={256}
+                level="H"
+                includeMargin={true}
+                className="w-64 h-64"
+              />
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-2">สแกนเพื่อสั่งอาหาร</p>
+            <p className="text-xs text-gray-400">Order ID: {orderData.orderID}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="text-center text-sm text-gray-500">
+        <p>© {new Date().getFullYear()} Hana Shabu. All rights reserved.</p>
       </div>
     </div>
   );
