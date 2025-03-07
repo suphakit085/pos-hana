@@ -1,68 +1,140 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdOutlineCancel } from "react-icons/md";
-import { FaRegUserCircle } from "react-icons/fa";
-import { LuCalendarDays } from "react-icons/lu";
-import { IoQrCode } from "react-icons/io5";
-import { TbMoneybag } from "react-icons/tb";
-import { Checkbox } from './ui/checkbox';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface TableClickProps {
     tableId: string;
     tableStatus: string;
     customerCount: number;
     onClose: () => void;
+    onOrderCreated?: (newStatus: string, newCustomerCount: number) => void;
 }
 
-function ModalReceiveCustomer({ tableId, tableStatus, customerCount, onClose }: TableClickProps) {
-    const [activeTab, setActiveTab] = useState<string>('customer'); // Default tab
+interface BuffetType {
+    buffetTypeID: number;
+    buffetTypesName: string;
+    buffetTypePrice: number;
+}
 
-    // สถานะการกรอกข้อมูล
-    const [newCustomerCount, setNewCustomerCount] = useState<number>(customerCount);
-    const [reservationName, setReservationName] = useState<string>('');
-    const [reservationTime, setReservationTime] = useState<string>('');
-    const [reservationPhone, setReservationPhone] = useState<string>('');
+interface Employee {
+    empID: number;
+    empFname: string;
+    empLname: string;
+    position: string;
+}
 
-    // คำนวณว่าควรแสดงปุ่มอะไรบ้างตามสถานะ
-    const showCustomerButton = tableStatus === "ว่าง" || tableStatus === "จอง";
-    const showReserveButton = tableStatus === "ว่าง";
-    const showQrCodeButton = tableStatus === "มีลูกค้า";
-    const showBillButton = tableStatus === "มีลูกค้า";
+function ModalReceiveCustomer({ tableId, tableStatus, customerCount, onClose, onOrderCreated }: TableClickProps) {
+    const router = useRouter();
+    const [newCustomerCount, setNewCustomerCount] = useState<number>(customerCount || 1);
+    const [buffetTypes, setBuffetTypes] = useState<BuffetType[]>([]);
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [selectedBuffetType, setSelectedBuffetType] = useState<number | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    
+    // โหลดข้อมูล buffet types และ employees
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                console.log("Fetching buffet types and employees...");
+                // Fetch Buffet Types
+                const buffetResponse = await fetch("/api/buffet");
+                if (!buffetResponse.ok) throw new Error("Failed to fetch buffet types");
+                const buffetData = await buffetResponse.json();
+                setBuffetTypes(buffetData);
+        
+                // Fetch Employees
+                const employeeResponse = await fetch("/api/employees");
+                if (!employeeResponse.ok) throw new Error("Failed to fetch employees");
+                const employeeData = await employeeResponse.json();
+                setEmployees(employeeData);
+                console.log("Data fetched successfully");
+            } catch (err) {
+                console.error("Error fetching data:", err);
+                alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+            }
+        }
 
-    const handleCustomerSubmit = () => {
-        // โค้ดสำหรับบันทึกการรับลูกค้า
-        console.log(`รับลูกค้า ${newCustomerCount} คน ที่โต๊ะ ${tableId}`);
-        // TODO: อัพเดทสถานะโต๊ะในระบบ
-        onClose();
+        fetchData();
+    }, []);
+
+    // สร้างออเดอร์และ redirect ไปหน้า QR Code
+    const handleCreateOrder = async () => {
+        // ตรวจสอบข้อมูล
+        if (!selectedBuffetType) {
+            alert('กรุณาเลือกประเภทบุฟเฟ่ต์');
+            return;
+        }
+
+        if (!selectedEmployee) {
+            alert('กรุณาเลือกพนักงาน');
+            return;
+        }
+
+        if (newCustomerCount < 1) {
+            alert('จำนวนลูกค้าต้องมากกว่า 0');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            console.log("Creating order...");
+            const tablesId = parseInt(tableId.replace(/[^\d]/g, ''));
+            
+            // สร้างออเดอร์ใหม่
+            const response = await fetch("/api/orders/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    Tables_tabID: tablesId,
+                    Employee_empID: selectedEmployee,
+                    BuffetTypes_buffetTypeID: selectedBuffetType,
+                    orderStatus: "PENDING",
+                    totalCustomerCount: newCustomerCount,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to create order');
+            }
+            
+            // รับข้อมูล QR Code
+            const data = await response.json();
+            console.log("Order created successfully:", data);
+            
+            // แจ้ง component แม่ให้อัปเดต UI
+            if (onOrderCreated) {
+                console.log("Calling onOrderCreated with:", "มีลูกค้า", newCustomerCount);
+                onOrderCreated("มีลูกค้า", newCustomerCount);
+            }
+            
+            onClose(); // ปิด modal
+            
+            // Redirect ไปยังหน้า QR Code
+            if (data && data.orderItemId) {
+                console.log("Redirecting to QR code page:", data.orderItemId);
+                router.push(`/admin/qrcode/${data.orderItemId}`);
+            } else {
+                console.error("No orderItemId in response:", data);
+                throw new Error("No orderItemId in response");
+            }
+            
+        } catch (err) {
+            console.error("Error creating order:", err);
+            alert('เกิดข้อผิดพลาดในการสร้างออเดอร์');
+            setIsLoading(false);
+        }
     };
-
-    const handleReservationSubmit = () => {
-        // โค้ดสำหรับบันทึกการจองโต๊ะ
-        console.log(`จองโต๊ะ ${tableId} ชื่อ ${reservationName} เวลา ${reservationTime}`);
-        // TODO: อัพเดทสถานะโต๊ะในระบบ
-        onClose();
-    };
-
-    const handleGenerateQR = () => {
-        // โค้ดสำหรับสร้าง QR Code
-        console.log(`สร้าง QR Code สำหรับโต๊ะ ${tableId}`);
-        // TODO: สร้าง QR Code และแสดงผล
-    };
-
-    const handleCheckBill = () => {
-        // โค้ดสำหรับเช็คบิล
-        console.log(`เช็คบิลโต๊ะ ${tableId}`);
-        // TODO: เปิดหน้าเช็คบิล
-        onClose();
-    };
-
-
-
-
-
+    
+    // แสดงฟอร์มกรอกข้อมูล
     return (
-        <div className="fixed inset-0 w-96 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+             style={{ zIndex: 9999 }}>
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
                 {/* Modal Header */}
                 <div className="bg-gray-100 px-4 py-3 flex justify-between items-center">
@@ -75,203 +147,78 @@ function ModalReceiveCustomer({ tableId, tableStatus, customerCount, onClose }: 
                     </button>
                 </div>
 
-                {/* Tab Navigation */}
-                <div className="flex border-b">
-                    {showCustomerButton && (
-                        <button
-                            className={`flex items-center px-4 py-2 ${activeTab === 'customer' ? 'border-b-2 border-[#FFB8DA] text-[#FFB8DA]' : 'text-gray-600'}`}
-                            onClick={() => setActiveTab('customer')}
-                        >
-                            <FaRegUserCircle className="w-5 h-5 mr-1" />
-                            รับลูกค้า
-                        </button>
-                    )}
-
-                    {showReserveButton && (
-                        <button
-                            className={`flex items-center px-4 py-2 ${activeTab === 'reserve' ? 'border-b-2 border-[#FFB8DA] text-[#FFB8DA]' : 'text-gray-600'}`}
-                            onClick={() => setActiveTab('reserve')}
-                        >
-                            <LuCalendarDays className="w-5 h-5 mr-1" />
-                            จองโต๊ะ
-                        </button>
-                    )}
-
-                    {showQrCodeButton && (
-                        <button
-                            className={`flex items-center px-4 py-2 ${activeTab === 'qrcode' ? 'border-b-2 border-[#FFB8DA] text-[#FFB8DA]' : 'text-gray-600'}`}
-                            onClick={() => setActiveTab('qrcode')}
-                        >
-                            <IoQrCode className="w-5 h-5 mr-1" />
-                            QR Code
-                        </button>
-                    )}
-
-                    {showBillButton && (
-                        <button
-                            className={`flex items-center px-4 py-2 ${activeTab === 'bill' ? 'border-b-2 border-[#FFB8DA] text-[#FFB8DA]' : 'text-gray-600'}`}
-                            onClick={() => setActiveTab('bill')}
-                        >
-                            <TbMoneybag className="w-5 h-5 mr-1" />
-                            เช็คบิล
-                        </button>
-                    )}
-                </div>
-
-                {/* Tab Content */}
                 <div className="p-6">
-                    {activeTab === 'customer' && (
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-medium">รับลูกค้า</h3>
-                            <div>
-                                <div className='grid grid-cols-1 md:grid-cols-2'>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">จำนวนลูกค้า</label>
-                                        <div className="mt-1 flex items-center">
-                                            <button
-                                                className="bg-[#FFB8DA] px-3 py-1 rounded-l-md hover:bg-[#fcc6e0]"
-                                                onClick={() => setNewCustomerCount(Math.max(1, newCustomerCount - 1))}
-                                            >
-                                                -
-                                            </button>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={newCustomerCount}
-                                                onChange={(e) => setNewCustomerCount(parseInt(e.target.value) || 1)}
-                                                className="text-center border-t border-b w-16 py-1"
-                                            />
-                                            <button
-                                                className="bg-[#FFB8DA] px-3 py-1 rounded-r-md hover:bg-[#fcc6e0]"
-                                                onClick={() => setNewCustomerCount(newCustomerCount + 1)}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className='flex flex-col justify-between'>
-                                        <label className="block text-sm font-medium text-gray-700">ตัวเลือกบุฟเฟต์</label>
-                                        <select name="buffettype" id="type" className='border p-[3px] rounded-lg'>
-                                            <option value="standard">Standard</option>
-                                            <option value="premium">Premium</option>
-                                        </select>
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">รับลูกค้า</h3>
+                        <div>
+                            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนลูกค้า</label>
+                                    <div className="flex items-center">
+                                        <button
+                                            className="bg-[#FFB8DA] px-3 py-1 rounded-l-md hover:bg-[#fcc6e0]"
+                                            onClick={() => setNewCustomerCount(Math.max(1, newCustomerCount - 1))}
+                                            type="button"
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={newCustomerCount}
+                                            onChange={(e) => setNewCustomerCount(parseInt(e.target.value) || 1)}
+                                            className="text-center border-t border-b w-16 py-1"
+                                        />
+                                        <button
+                                            className="bg-[#FFB8DA] px-3 py-1 rounded-r-md hover:bg-[#fcc6e0]"
+                                            onClick={() => setNewCustomerCount(newCustomerCount + 1)}
+                                            type="button"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            <button
-                                className="w-full bg-[#FFB8DA] text-white py-2 rounded-md hover:bg-[#fcc6e0]"
-                                onClick={handleCustomerSubmit}
-                            >
-                                ยืนยัน
-                            </button>
-                        </div>
-                    )}
-
-                    {activeTab === 'reserve' && (
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-medium">จองโต๊ะ</h3>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">ชื่อผู้จอง</label>
-                                <input
-                                    type="text"
-                                    value={reservationName}
-                                    onChange={(e) => setReservationName(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                                    placeholder="กรอกชื่อผู้จอง"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label>
-                                <input
-                                    type="tel"
-                                    value={reservationPhone}
-                                    onChange={(e) => setReservationPhone(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                                    placeholder="เบอร์โทรศัพท์"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">เวลาที่จอง</label>
-                                <input
-                                    type="time"
-                                    value={reservationTime}
-                                    onChange={(e) => setReservationTime(e.target.value)}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">จำนวนลูกค้า</label>
-                                <div className="mt-1 flex items-center">
-                                    <button
-                                        className="bg-[#FFB8DA] px-3 py-1 rounded-l-md hover:bg-[#fcc6e0]"
-                                        onClick={() => setNewCustomerCount(Math.max(1, newCustomerCount - 1))}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">ประเภทบุฟเฟ่ต์</label>
+                                    <select 
+                                        value={selectedBuffetType || ''} 
+                                        onChange={(e) => setSelectedBuffetType(Number(e.target.value))}
+                                        className='border p-2 rounded-lg w-full'
                                     >
-                                        -
-                                    </button>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={newCustomerCount}
-                                        onChange={(e) => setNewCustomerCount(parseInt(e.target.value) || 1)}
-                                        className="text-center border-t border-b w-16 py-1"
-                                    />
-                                    <button
-                                        className="bg-[#FFB8DA] px-3 py-1 rounded-r-md hover:bg-[#fcc6e0]"
-                                        onClick={() => setNewCustomerCount(newCustomerCount + 1)}
-                                    >
-                                        +
-                                    </button>
+                                        <option value="">เลือกประเภทบุฟเฟ่ต์</option>
+                                        {buffetTypes.map((buffet) => (
+                                            <option key={buffet.buffetTypeID} value={buffet.buffetTypeID}>
+                                                {buffet.buffetTypesName} (฿{buffet.buffetTypePrice})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                            <button
-                                className="w-full bg-[#FFB8DA] text-white py-2 rounded-md hover:bg-[#fcc6e0]"
-                                onClick={handleReservationSubmit}
-                            >
-                                ยืนยันการจอง
-                            </button>
                         </div>
-                    )}
-
-                    {activeTab === 'qrcode' && (
-                        <div className="space-y-4 text-center">
-                            <h3 className="text-lg font-medium">QR Code สำหรับสั่งอาหาร</h3>
-                            <div className="border-2 border-dashed border-gray-300 p-4 rounded-lg">
-                                {/* QR Code จะแสดงตรงนี้ */}
-                                <div className="w-48 h-48 bg-gray-100 mx-auto flex items-center justify-center">
-                                    <IoQrCode className="w-24 h-24 text-gray-400" />
-                                </div>
-                            </div>
-                            <button
-                                className="w-full bg-[#FFB8DA] text-white py-2 rounded-md hover:bg-[#fcc6e0]"
-                                onClick={handleGenerateQR}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">พนักงาน</label>
+                            <select 
+                                value={selectedEmployee || ''} 
+                                onChange={(e) => setSelectedEmployee(Number(e.target.value))}
+                                className='border p-2 rounded-lg w-full'
                             >
-                                สร้าง QR Code
-                            </button>
-                            <button
-                                className="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-md hover:bg-gray-50"
-                            >
-                                พิมพ์ QR Code
-                            </button>
+                                <option value="">เลือกพนักงาน</option>
+                                {employees.map((employee) => (
+                                    <option key={employee.empID} value={employee.empID}>
+                                        {employee.empFname} {employee.empLname} - {employee.position}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                    )}
-
-                    {activeTab === 'bill' && (
-                        <div className="space-y-4 text-center">
-                            <h3 className="text-lg font-medium">เช็คบิล</h3>
-                            <div className="p-4">
-                                <p className="mb-2">ยืนยันการเช็คบิลโต๊ะ {tableId}</p>
-                                <p className="text-sm text-gray-500">ลูกค้า: {customerCount} คน</p>
-                            </div>
-                            <Link href={`/admin/tables/checkbill?tableId=${tableId}&customerCount=${customerCount}`}>
-                                <button
-                                    className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700"
-                                    onClick={handleCheckBill}
-                                >
-                                    เช็คบิล
-                                </button>
-                            </Link>
-                        </div>
-                    )}
+                        <button
+                            className="w-full bg-[#FFB8DA] text-white py-2 rounded-md hover:bg-[#fcc6e0] disabled:opacity-50"
+                            onClick={handleCreateOrder}
+                            disabled={isLoading || !selectedBuffetType || !selectedEmployee}
+                            type="button"
+                        >
+                            {isLoading ? 'กำลังบันทึก...' : 'ยืนยัน'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
