@@ -86,11 +86,27 @@ export async function PUT(
     
     // ตรวจสอบว่ามีโต๊ะนี้หรือไม่
     const existingTable = await prisma.tables.findUnique({
-      where: { tabID: numericId }
+      where: { tabID: numericId },
+      include: {
+        reservations: {
+          where: {
+            resStatus: 'CONFIRMED',
+            // ตรวจสอบการจองที่ยังไม่หมดอายุ (วันที่ปัจจุบันหรืออนาคต)
+            resDate: {
+              gte: new Date().toISOString().split('T')[0]
+            }
+          }
+        }
+      }
     });
     
     if (!existingTable) {
       return NextResponse.json({ error: "Table not found" }, { status: 404 });
+    }
+    
+    // ตรวจสอบว่าโต๊ะถูกจองไว้หรือไม่
+    if (existingTable.reservations.length > 0 && status === 'ว่าง') {
+      return NextResponse.json({ error: "Table is already reserved" }, { status: 400 });
     }
     
     // อัพเดตสถานะโต๊ะ

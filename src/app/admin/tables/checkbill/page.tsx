@@ -13,6 +13,7 @@ import { useSearchParams } from 'next/navigation'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Printer } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface BillProps {
   tableNumber: string;
@@ -35,6 +36,7 @@ function CheckbillPage() {
   const [error, setError] = useState<string | null>(null);
   const [billPaid, setBillPaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID'>('PENDING');
+  const [shouldCloseOrder, setShouldCloseOrder] = useState(true);
   
   const searchParams = useSearchParams();
   const tableId = searchParams.get('tableId') || '';
@@ -213,46 +215,78 @@ function CheckbillPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            status: 'ว่าง'
+            status: shouldCloseOrder ? 'ว่าง' : 'มีลูกค้า'
           }),
         });
 
         if (!updateTableResponse.ok) {
           const errorData = await updateTableResponse.json();
           console.error("ไม่สามารถอัพเดตสถานะโต๊ะได้:", updateTableResponse.statusText, errorData);
-          success = false;
+          
+          // ตรวจสอบว่าเป็นข้อผิดพลาด Table is already reserved หรือไม่
+          if (errorData.error === "Table is already reserved") {
+            // ถ้าโต๊ะถูกจองไว้แล้ว ให้แสดงข้อความแจ้งเตือนและถามว่าต้องการดำเนินการต่อหรือไม่
+            if (!confirm("โต๊ะนี้มีการจองไว้แล้ว ไม่สามารถเปลี่ยนสถานะเป็น 'ว่าง' ได้\nต้องการดำเนินการต่อโดยไม่เปลี่ยนสถานะโต๊ะหรือไม่?")) {
+              // ถ้าไม่ต้องการดำเนินการต่อ ให้ยกเลิกการชำระเงิน
+              throw new Error("ยกเลิกการชำระเงินเนื่องจากโต๊ะมีการจองไว้แล้ว");
+            }
+            // ถ้าต้องการดำเนินการต่อ ให้ทำการชำระเงินโดยไม่เปลี่ยนสถานะโต๊ะ
+            console.log("ดำเนินการชำระเงินต่อโดยไม่เปลี่ยนสถานะโต๊ะ");
+          } else {
+            // ถ้าเป็นข้อผิดพลาดอื่น ให้บันทึกว่าไม่สำเร็จ
+            success = false;
+          }
         } else {
           const result = await updateTableResponse.json();
           console.log("อัพเดตสถานะโต๊ะสำเร็จ:", result);
         }
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการอัพเดตสถานะโต๊ะ:", err);
+        
+        // ตรวจสอบว่าเป็นข้อผิดพลาดจากการยกเลิกโดยผู้ใช้หรือไม่
+        if (err instanceof Error && err.message === "ยกเลิกการชำระเงินเนื่องจากโต๊ะมีการจองไว้แล้ว") {
+          // ถ้าเป็นการยกเลิกโดยผู้ใช้ ให้ยกเลิกการทำงานทั้งหมด
+          throw err;
+        }
+        
         success = false;
       }
 
-      try {
-        // อัพเดตสถานะออเดอร์เป็นปิดแล้ว
-        const updateOrderResponse = await fetch(`/api/orders/close`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tableId: numericTableId
-          }),
-        });
+      // ปิดออเดอร์เฉพาะเมื่อเลือกตัวเลือกการปิดออเดอร์
+      if (shouldCloseOrder) {
+        try {
+          // อัพเดตสถานะออเดอร์เป็นปิดแล้ว
+          const updateOrderResponse = await fetch(`/api/orders/close`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tableId: numericTableId
+            }),
+          });
 
-        if (!updateOrderResponse.ok) {
-          const errorData = await updateOrderResponse.json();
-          console.error("ไม่สามารถอัพเดตสถานะออเดอร์ได้:", updateOrderResponse.statusText, errorData);
+          if (!updateOrderResponse.ok) {
+            const errorData = await updateOrderResponse.json();
+            console.error("ไม่สามารถอัพเดตสถานะออเดอร์ได้:", updateOrderResponse.statusText, errorData);
+            
+            // ตรวจสอบว่าเป็นข้อผิดพลาด No active orders found หรือไม่
+            if (errorData.error === "No active orders found for this table") {
+              console.log("ไม่พบออเดอร์ที่ยังไม่ปิดสำหรับโต๊ะนี้ ข้ามขั้นตอนการปิดออเดอร์");
+              // ไม่ถือว่าเป็นข้อผิดพลาด เพราะอาจไม่มีออเดอร์ที่ยังไม่ปิด
+            } else {
+              success = false;
+            }
+          } else {
+            const result = await updateOrderResponse.json();
+            console.log("อัพเดตสถานะออเดอร์สำเร็จ:", result);
+          }
+        } catch (err) {
+          console.error("เกิดข้อผิดพลาดในการอัพเดตสถานะออเดอร์:", err);
           success = false;
-        } else {
-          const result = await updateOrderResponse.json();
-          console.log("อัพเดตสถานะออเดอร์สำเร็จ:", result);
         }
-      } catch (err) {
-        console.error("เกิดข้อผิดพลาดในการอัพเดตสถานะออเดอร์:", err);
-        success = false;
+      } else {
+        console.log("ไม่ปิดออเดอร์ตามที่เลือกไว้");
       }
 
       // แสดงข้อความสำเร็จและกลับไปหน้าโต๊ะ
@@ -403,6 +437,20 @@ function CheckbillPage() {
                   <Label htmlFor="promptpay">พร้อมเพย์</Label>
                 </div>
               </RadioGroup>
+              
+              {/* เพิ่มตัวเลือกการปิดออเดอร์ */}
+              <div className="mt-4 border-t pt-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="closeOrder" 
+                    checked={shouldCloseOrder}
+                    onCheckedChange={(checked) => setShouldCloseOrder(checked as boolean)}
+                  />
+                  <Label htmlFor="closeOrder" className="text-sm">
+                    ปิดออเดอร์หลังชำระเงิน (ลูกค้าจะไม่สามารถสั่งอาหารเพิ่มได้)
+                  </Label>
+                </div>
+              </div>
             </div>
 
             {/* แสดงวิธีการชำระเงินในใบเสร็จ */}

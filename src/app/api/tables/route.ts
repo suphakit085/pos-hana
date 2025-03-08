@@ -39,6 +39,7 @@ export async function GET() {
       return {
         tabID: table.tabID,
         tabName: `T${table.tabID.toString().padStart(2, '0')}`,
+        tabTypes: table.tabTypes || 'normal',
         tabStatus: tableStatus,
         customerCount: customerCount
       };

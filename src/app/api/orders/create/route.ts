@@ -54,13 +54,16 @@ export async function POST(req: NextRequest) {
     const existingOrder = await prisma.orders.findFirst({
       where: {
         Tables_tabID: validatedData.Tables_tabID,
-        NOT: { orderStatus: { in: ["COMPLETED", "CANCELLED"] } },
+        NOT: { orderStatus: { in: ["COMPLETED", "CANCELLED", "CLOSED"] } },
       },
     });
     console.log("Existing order:", existingOrder);
 
     if (existingOrder) {
-      return NextResponse.json({ error: "Table is already reserved" }, { status: 400 });
+      return NextResponse.json({ 
+        error: "Table is already reserved", 
+        message: "โต๊ะนี้มีลูกค้าอยู่แล้ว กรุณาเลือกโต๊ะอื่น หรือเช็คบิลโต๊ะนี้ก่อน" 
+      }, { status: 400 });
     }
 
     const orderItemId = randomUUID().toLowerCase().trim();;
@@ -81,6 +84,13 @@ export async function POST(req: NextRequest) {
         },
       });
       console.log("Created order:", newOrder);
+      
+      // อัพเดตสถานะโต๊ะเป็น "มีลูกค้า"
+      await prisma.tables.update({
+        where: { tabID: validatedData.Tables_tabID },
+        data: { tabStatus: "มีลูกค้า" }
+      });
+      console.log("Updated table status to 'มีลูกค้า'");
     } catch (prismaError: any) {
       console.error("Prisma create error:", {
         message: prismaError.message,

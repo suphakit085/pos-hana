@@ -6,6 +6,7 @@ interface Table {
   id: string;
   status: string;
   customercount: number;
+  tabletype?: string;
 }
 
 function TableLayout() {
@@ -24,7 +25,8 @@ function TableLayout() {
       const formattedTables = data.map((table: any) => ({
         id: `T${table.tabID.toString().padStart(2, '0')}`,
         status: table.tabStatus || "ว่าง", 
-        customercount: table.customerCount || 0
+        customercount: table.customerCount || 0,
+        tabletype: table.tabTypes || 'normal'
       }));
       
       setTables(formattedTables);
@@ -98,10 +100,11 @@ function TableLayout() {
       <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-8 justify-items-center">
         {tables.map((table) => (
           <CardTable 
-            key={table.id} 
-            tableId={table.id} 
-            tableStatus={table.status} 
+            key={table.id}
+            tableId={table.id}
+            tableStatus={table.status}
             customerCount={table.customercount}
+            tableType={table.tabletype}
             onTableStatusChange={handleTableStatusChange}
           />
         ))}

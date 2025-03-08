@@ -25,7 +25,7 @@ interface MenuItem {
   itemImage: string;
   description: string;
   MenuItemCreatedAt: Date;
-  category: 'snack' | 'soup' | 'noodle' | 'vegetables' | 'meat' | 'beverage';
+  category: 'snack' | 'soup' | 'noodle' | 'vegetables' | 'meat' | 'beverage' | 'หมู' | 'เนื้อ';
   buffetTypeID: number;
 }
 
@@ -395,14 +395,17 @@ const menuData: { items: MenuItem[]; } = {
   ]
 };
 
-// categories transranslation
-const categoryTranslations: Record<MenuItem['category'], string> = {
+// Category translations
+const categoryTranslations: Record<MenuItem['category'] | 'all', string> = {
+  all: "ทั้งหมด",
   snack: "ของทานเล่น",
   soup: "น้ำซุป",
   noodle: "เส้น",
   vegetables: "ผัก",
   meat: "เนื้อ",
-  beverage: "เครื่องดื่ม"
+  beverage: "เครื่องดื่ม",
+  'หมู': "หมู",
+  'เนื้อ': "เนื้อวัว"
 };
 
 const OrderPage = () => {
@@ -422,6 +425,8 @@ const OrderPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [buffetTypeID, setBuffetTypeID] = useState<number | null>(null);
   const [buffetTypeName, setBuffetTypeName] = useState<string>("");
+  const [orderClosed, setOrderClosed] = useState(false);
+  const [meatType, setMeatType] = useState<'all' | 'pork' | 'beef'>('all');
 
   // ใช้ tableId ในการดึงข้อมูลโต๊ะหรือออเดอร์เมื่อคอมโพเนนต์โหลด
   useEffect(() => {
@@ -458,9 +463,19 @@ const OrderPage = () => {
         // ถ้าไม่ใช่ตัวเลข (เป็น UUID) ให้ดึงข้อมูลออเดอร์จาก API
         fetch(`/api/orders/get?id=${tableId}`)
           .then(response => {
+            // ตรวจสอบสถานะการตอบกลับ
+            if (response.status === 403) {
+              // ออเดอร์ถูกปิดแล้ว
+              return response.json().then(data => {
+                setOrderClosed(true);
+                throw new Error(data.message || 'ออเดอร์นี้ถูกปิดแล้ว ไม่สามารถสั่งอาหารได้');
+              });
+            }
+            
             if (!response.ok) {
               throw new Error('ไม่พบข้อมูลออเดอร์');
             }
+            
             return response.json();
           })
           .then(data => {
@@ -639,10 +654,13 @@ const OrderPage = () => {
     
     console.log("Filtering menu items with buffetTypeID:", buffetTypeID);
     console.log("Active category:", activeCategory);
+    console.log("Meat type:", meatType);
     
     const filtered = menuItems.filter(item => {
-      // กรองตามหมวดหมู่ที่เลือก
-      const categoryMatch = activeCategory === 'all' || item.category === activeCategory;
+      // กรองตามหมวดหมู่ที่เลือก (แสดงเฉพาะหมวดหมู่ meat, หมู, เนื้อ หรือทั้งหมด)
+      const categoryMatch = activeCategory === 'all' || 
+                           activeCategory === 'meat' || 
+                           activeCategory === item.category;
       
       // กรองตามคำค้นหา
       const searchMatch = 
@@ -653,30 +671,50 @@ const OrderPage = () => {
       // กรองตามประเภทบุฟเฟต์
       let buffetTypeMatch = true;
       
+      // ตรวจสอบว่าเป็นเมนูหมูหรือเนื้อ
+      const isBeefMenu = 
+        item.category === 'เนื้อ' || 
+        item.NameTHA.includes('เนื้อวัว') || 
+        item.NameTHA.includes('เนื้อโคขุน') || 
+        item.NameENG.toLowerCase().includes('beef');
+      
+      const isPorkMenu = 
+        item.category === 'หมู' || 
+        (!isBeefMenu && item.category === 'meat');
+      
       // ถ้าไม่มีการระบุประเภทบุฟเฟต์ ให้แสดงทุกเมนู
       if (!buffetTypeID) {
         buffetTypeMatch = true;
       }
       // บุฟเฟต์หมู (ID 1) แสดงเฉพาะเมนูหมู
       else if (buffetTypeID === 1) {
-        // แสดงทุกเมนูที่ไม่ใช่เนื้อวัว
-        buffetTypeMatch = !(
-          item.NameTHA.includes('เนื้อวัว') || 
-          item.NameTHA.includes('เนื้อโคขุน') || 
-          item.NameENG.toLowerCase().includes('beef')
-        );
+        buffetTypeMatch = isPorkMenu;
       }
-      // บุฟเฟต์หมู+เนื้อ (ID 2) แสดงทุกเมนู
+      // บุฟเฟต์เนื้อ (ID 2) แสดงทั้งเมนูหมูและเนื้อ
       else if (buffetTypeID === 2) {
-        buffetTypeMatch = true;
+        buffetTypeMatch = isPorkMenu || isBeefMenu;
       }
       
-      return categoryMatch && searchMatch && buffetTypeMatch;
+      // แสดงเฉพาะหมวดหมู่เนื้อสัตว์ (meat, หมู, เนื้อ)
+      const isMeatCategory = 
+        item.category === 'meat' || 
+        item.category === 'หมู' || 
+        item.category === 'เนื้อ';
+      
+      // กรองตามประเภทเนื้อที่เลือก
+      let meatTypeMatch = true;
+      if (meatType === 'pork') {
+        meatTypeMatch = isPorkMenu;
+      } else if (meatType === 'beef') {
+        meatTypeMatch = isBeefMenu;
+      }
+      
+      return categoryMatch && searchMatch && buffetTypeMatch && isMeatCategory && meatTypeMatch;
     });
     
     console.log("Filtered items:", filtered.length);
     return filtered;
-  }, [menuItems, activeCategory, searchQuery, buffetTypeID]);
+  }, [menuItems, activeCategory, searchQuery, buffetTypeID, meatType]);
 
   // แสดงข้อความเมื่อกำลังโหลดข้อมูล
   if (loading) {
@@ -696,19 +734,25 @@ const OrderPage = () => {
   // แสดงข้อความเมื่อเกิดข้อผิดพลาด
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md max-w-md">
-          <h2 className="text-2xl font-bold mb-4 text-red-600">เกิดข้อผิดพลาด</h2>
-          <p className="mb-6 text-gray-700">{error}</p>
-          <div className="flex flex-col space-y-3">
-            <Button className="w-full" onClick={() => window.location.reload()}>
-              ลองใหม่อีกครั้ง
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => window.location.href = '/'}>
-              กลับไปหน้าหลัก
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-red-500 mb-4">
+                {orderClosed ? 'ออเดอร์ถูกปิดแล้ว' : 'เกิดข้อผิดพลาด'}
+              </h2>
+              <p className="mb-6">{error}</p>
+              {orderClosed && (
+                <p className="mb-6 text-gray-600">
+                  ออเดอร์นี้ถูกปิดแล้ว เนื่องจากมีการชำระเงินเรียบร้อยแล้ว ไม่สามารถสั่งอาหารได้อีก
+                </p>
+              )}
+              <Button onClick={() => window.location.href = '/'}>
+                กลับไปหน้าหลัก
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -881,20 +925,39 @@ const OrderPage = () => {
           <Button
             variant={activeCategory === 'all' ? 'default' : 'outline'}
             className="whitespace-nowrap"
-            onClick={() => setActiveCategory('all')}
+            onClick={() => {
+              setActiveCategory('all');
+              setMeatType('all');
+              setSearchQuery('');
+            }}
           >
             ทั้งหมด
           </Button>
-          {Object.entries(categoryTranslations).map(([key, label]) => (
-            <Button
-              key={key}
-              variant={activeCategory === key ? 'default' : 'outline'}
-              className="whitespace-nowrap"
-              onClick={() => setActiveCategory(key as MenuItem['category'])}
-            >
-              {label}
-            </Button>
-          ))}
+          
+          {/* แสดงปุ่มหมวดหมู่หมูและเนื้อ */}
+          <Button
+            variant={meatType === 'pork' ? 'default' : 'outline'}
+            className="whitespace-nowrap"
+            onClick={() => {
+              setActiveCategory('หมู');
+              setMeatType('pork');
+              setSearchQuery('');
+            }}
+          >
+            {categoryTranslations['หมู']}
+          </Button>
+          
+          <Button
+            variant={meatType === 'beef' ? 'default' : 'outline'}
+            className="whitespace-nowrap"
+            onClick={() => {
+              setActiveCategory('เนื้อ');
+              setMeatType('beef');
+              setSearchQuery('');
+            }}
+          >
+            {categoryTranslations['เนื้อ']}
+          </Button>
         </div>
       </div>
 

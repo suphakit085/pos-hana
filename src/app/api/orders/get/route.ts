@@ -47,6 +47,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
     
+    // ตรวจสอบสถานะออเดอร์ว่าเป็น "CLOSED" หรือไม่
+    if (order.orderStatus === "CLOSED") {
+      return NextResponse.json({ 
+        error: "Order is closed", 
+        message: "ออเดอร์นี้ถูกปิดแล้ว ไม่สามารถสั่งอาหารได้",
+        orderStatus: "CLOSED"
+      }, { status: 403 });
+    }
+    
     // ปรับรูปแบบข้อมูลที่จะส่งกลับ
     const formattedOrder = {
       orderID: order.orderID,

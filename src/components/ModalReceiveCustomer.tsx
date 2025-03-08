@@ -100,6 +100,14 @@ function ModalReceiveCustomer({ tableId, tableStatus, customerCount, onClose, on
 
             if (!response.ok) {
                 const errorData = await response.json();
+                
+                // จัดการข้อผิดพลาด Table is already reserved
+                if (errorData.error === "Table is already reserved") {
+                    setIsLoading(false);
+                    alert(errorData.message || "โต๊ะนี้มีลูกค้าอยู่แล้ว กรุณาเลือกโต๊ะอื่น หรือเช็คบิลโต๊ะนี้ก่อน");
+                    return;
+                }
+                
                 throw new Error(errorData.error || 'Failed to create order');
             }
             
@@ -126,7 +134,22 @@ function ModalReceiveCustomer({ tableId, tableStatus, customerCount, onClose, on
             
         } catch (err) {
             console.error("Error creating order:", err);
-            alert('เกิดข้อผิดพลาดในการสร้างออเดอร์');
+            
+            // แสดงข้อความข้อผิดพลาดที่เข้าใจง่าย
+            if (err instanceof Error) {
+                if (err.message.includes("Employee ID") && err.message.includes("not found")) {
+                    alert('ไม่พบข้อมูลพนักงานที่เลือก กรุณาเลือกพนักงานอื่น');
+                } else if (err.message.includes("Buffet Type ID") && err.message.includes("not found")) {
+                    alert('ไม่พบข้อมูลประเภทบุฟเฟต์ที่เลือก กรุณาเลือกประเภทบุฟเฟต์อื่น');
+                } else if (err.message.includes("Table ID") && err.message.includes("not found")) {
+                    alert('ไม่พบข้อมูลโต๊ะที่เลือก กรุณาเลือกโต๊ะอื่น');
+                } else {
+                    alert(`เกิดข้อผิดพลาดในการสร้างออเดอร์: ${err.message}`);
+                }
+            } else {
+                alert('เกิดข้อผิดพลาดในการสร้างออเดอร์');
+            }
+            
             setIsLoading(false);
         }
     };

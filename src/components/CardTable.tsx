@@ -6,6 +6,7 @@ interface CardTableProps {
   tableId?: string;
   tableStatus?: string;
   customerCount?: number;
+  tableType?: string;
   onTableStatusChange: (tableId: string, newStatus: string, newCustomerCount?: number) => void;
 }
 
@@ -13,6 +14,7 @@ function CardTable({
   tableId = "T01", 
   tableStatus = "ว่าง", 
   customerCount = 0,
+  tableType = "normal",
   onTableStatusChange
 }: CardTableProps) {
     const [localTableStatus, setLocalTableStatus] = useState(tableStatus);
@@ -48,9 +50,18 @@ function CardTable({
           return "bg-[#F8E71D]"; // สีเหลือง
         case "มีลูกค้า":
           return "bg-[#4990E2]"; // สีฟ้า
+        case "ว่าง":
         default:
-          return "bg-[#B9E986]"; // สีเดิม (เขียว)
+          return "bg-[#7ED321]"; // สีเขียว
       }
+    };
+    
+    // กำหนดสีพื้นหลังของโต๊ะตามประเภทโต๊ะ
+    const getTableBackground = (): string => {
+      if (tableType.toUpperCase() === "VIP") {
+        return "bg-gradient-to-r from-purple-100 to-white"; // สีพิเศษสำหรับโต๊ะ VIP
+      }
+      return "bg-white"; // สีปกติสำหรับโต๊ะทั่วไป
     };
     
     // ปรับปรุงฟังก์ชัน getChairColor เพื่อพิจารณาทั้งสถานะโต๊ะและจำนวนลูกค้า
@@ -90,11 +101,16 @@ function CardTable({
             <div id="chair2" className={`w-[40px] h-[20px] ${getChairColor(2)} rounded-t-[100px] rounded-b-xl`}></div>
           </div>
 
-          <div className="w-[150px] h-[100px] rounded-xl flex drop-shadow-[1px_1px_2px_rgba(0,0,0,0.35)] bg-white">
+          <div className={`w-[150px] h-[100px] rounded-xl flex drop-shadow-[1px_1px_2px_rgba(0,0,0,0.35)] ${getTableBackground()}`}>
             {/* เปลี่ยนสีของแถบด้านซ้ายตามสถานะโต๊ะ */}
             <div className={`w-[9px] h-full ${getStatusColor()} rounded-l-xl`}></div>
             <div className="flex-1 pl-3 py-1 flex flex-col justify-between">
-              <p className="text-[#C8C8C8]">{tableId}</p>
+              <div className="flex justify-between pr-3">
+                <p className="text-[#C8C8C8]">{tableId}</p>
+                {tableType.toUpperCase() === "VIP" && (
+                  <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">VIP</span>
+                )}
+              </div>
               <div className="flex justify-between items-end pr-3">
                 <p>{localTableStatus}</p>
                 {shouldShowCustomerCount() && (<p className="text-sm text-gray-500">{localCustomerCount} คน</p>)}
