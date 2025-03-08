@@ -22,6 +22,11 @@ const translateStatus = (status) => {
     case 'CANCELLED':
       return 'ยกเลิกแล้ว';
     default:
+      // ถ้าเป็นภาษาไทยอยู่แล้ว ให้ส่งค่าเดิมกลับไป
+      if (status === 'รอดำเนินการ' || status === 'เสิร์ฟแล้ว' || status === 'ยกเลิกแล้ว') {
+        return status;
+      }
+      // ถ้าไม่ใช่ทั้งภาษาอังกฤษและภาษาไทยที่รู้จัก ให้ส่งค่าเดิมกลับไป
       return status;
   }
 };
@@ -36,7 +41,12 @@ const getEnglishStatus = (thaiStatus) => {
     case 'ยกเลิกแล้ว':
       return 'CANCELLED';
     default:
-      return thaiStatus;
+      // ถ้าเป็นภาษาอังกฤษอยู่แล้ว ให้ส่งค่าเดิมกลับไป
+      if (thaiStatus === 'PENDING' || thaiStatus === 'SERVED' || thaiStatus === 'CANCELLED') {
+        return thaiStatus;
+      }
+      // ถ้าไม่ใช่ทั้งภาษาไทยและภาษาอังกฤษที่รู้จัก ให้ส่ง PENDING เป็นค่าเริ่มต้น
+      return 'PENDING';
   }
 };
 
@@ -48,7 +58,7 @@ const FoodOrderTable = () => {
   // สถานะสำหรับการโหลดข้อมูล
   const [loading, setLoading] = useState(true);
 
-  // ดึงข้อมูลการสั่งอาหารเมื่อคอมโพเนนต์โหลด
+  // ดึงข้อมูลการสั่งอาหารเมื่อคอมโพเนนต์โหลดหรือเมื่อมีการเปลี่ยนแปลงสถานะที่เลือก
   useEffect(() => {
     fetchOrders();
     
@@ -59,39 +69,60 @@ const FoodOrderTable = () => {
     
     // ล้างการตั้งเวลาเมื่อคอมโพเนนต์ถูกทำลาย
     return () => clearInterval(intervalId);
-  }, []);
+  }, [filter]); // เพิ่ม filter เป็น dependency เพื่อให้รีเฟรชข้อมูลเมื่อมีการเปลี่ยนแปลงสถานะที่เลือก
 
   // ฟังก์ชันสำหรับดึงข้อมูลการสั่งอาหาร
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      
+      // กำหนด URL ตามสถานะที่เลือก
+      let url = '/api/orders/pending';
+      
+      // ถ้าเลือกสถานะอื่นที่ไม่ใช่ 'all' ให้เพิ่ม query parameter status
+      if (filter !== 'all') {
+        const englishStatus = getEnglishStatus(filter);
+        url = `/api/orders/pending?status=${englishStatus}`;
+      }
+      
+      console.log("Fetching orders from:", url);
+      
       // ดึงข้อมูลจาก API
-      const response = await fetch('/api/orders/pending');
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error('ไม่สามารถดึงข้อมูลการสั่งอาหารได้');
       }
       
       const data = await response.json();
+      console.log("Received data:", data);
       
       // แปลงข้อมูลให้อยู่ในรูปแบบที่ต้องการ
       const formattedOrders = data.map(order => {
-        return order.items.map(item => ({
-          id: `${order.orderID}-${item.menuItemID}`,
-          orderID: order.orderID,
-          table: `T${order.Tables_tabID.toString().padStart(2, '0')}`,
-          name: item.menuItem.menuItemNameTHA,
-          type: item.menuItem.menuItemNameENG,
-          quantity: item.quantity,
-          unit: 'จาน',
-          status: translateStatus(item.status),
-          createdAt: new Date(order.orderCreatedAt)
-        }));
+        return order.items.map(item => {
+          // สร้าง unique ID สำหรับแต่ละรายการ
+          const uniqueId = `${order.orderID}-${item.menuItemID}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          return {
+            id: uniqueId,
+            orderID: order.orderID,
+            table: `T${order.Tables_tabID.toString().padStart(2, '0')}`,
+            name: item.menuItem.menuItemNameTHA,
+            type: item.menuItem.menuItemNameENG,
+            quantity: item.quantity,
+            unit: 'จาน',
+            status: translateStatus(item.status),
+            createdAt: new Date(order.orderCreatedAt),
+            menuItemID: item.menuItemID,
+            orderItemID: item.orderItemID
+          };
+        });
       }).flat();
       
       // เรียงลำดับตามเวลาที่สั่ง (ล่าสุดขึ้นก่อน)
       formattedOrders.sort((a, b) => b.createdAt - a.createdAt);
       
+      console.log("Formatted orders:", formattedOrders);
       setFoodOrders(formattedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -149,13 +180,26 @@ const FoodOrderTable = () => {
   };
 
   // ฟังก์ชันสำหรับอัพเดตสถานะการสั่งอาหาร
-  const updateOrderStatus = async (orderId, menuItemId, newStatus) => {
+  const updateOrderStatus = async (orderId, menuItemId, newStatus, orderItemId) => {
     try {
-      // แยก orderID และ menuItemID จาก id
-      const [orderID, menuItemID] = orderId.split('-');
+      // ตรวจสอบข้อมูลก่อนส่งไปยัง API
+      if (!orderId || !menuItemId || !orderItemId) {
+        throw new Error('ข้อมูลไม่ครบถ้วน กรุณาลองใหม่อีกครั้ง');
+      }
+      
+      console.log("Updating status:", { orderId, menuItemId, newStatus, orderItemId });
       
       // แปลงสถานะเป็นภาษาอังกฤษ
       const englishStatus = getEnglishStatus(newStatus);
+      console.log("English status:", englishStatus);
+      
+      // แปลง orderId และ menuItemId เป็นตัวเลข
+      const numericOrderId = parseInt(orderId);
+      const numericMenuItemId = parseInt(menuItemId);
+      
+      if (isNaN(numericOrderId) || isNaN(numericMenuItemId)) {
+        throw new Error('รูปแบบ ID ไม่ถูกต้อง');
+      }
       
       // ส่งคำขอไปยัง API เพื่ออัพเดตสถานะ
       const response = await fetch('/api/orders/update-status', {
@@ -164,31 +208,47 @@ const FoodOrderTable = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderID: parseInt(orderID),
-          menuItemID: parseInt(menuItemID),
-          status: englishStatus
+          orderID: numericOrderId,
+          menuItemID: numericMenuItemId,
+          status: englishStatus,
+          orderItemID: orderItemId
         }),
       });
       
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        throw new Error('ไม่สามารถอัพเดตสถานะได้');
+        console.error("API error:", responseData);
+        throw new Error(`ไม่สามารถอัพเดตสถานะได้: ${responseData.error || response.statusText}`);
       }
       
+      console.log("API response:", responseData);
+      
       // อัพเดตสถานะในข้อมูลท้องถิ่น
-      setFoodOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.id === orderId 
+      setFoodOrders(prevOrders => {
+        const updatedOrders = prevOrders.map(order => 
+          (order.orderItemID === orderItemId)
             ? { ...order, status: newStatus } 
             : order
-        )
-      );
+        );
+        console.log("Updated local orders:", updatedOrders);
+        return updatedOrders;
+      });
       
       // แสดงข้อความแจ้งเตือน
-      alert(`อัพเดตสถานะสำเร็จ: รายการ ${menuItemId} ถูกอัพเดตเป็น ${newStatus}`);
+      alert(`อัพเดตสถานะสำเร็จ: รายการอาหารถูกอัพเดตเป็น ${newStatus}`);
+      
+      // เปลี่ยนแท็บไปยังสถานะที่อัพเดท
+      setFilter(newStatus);
+      
+      // รีเฟรชข้อมูลหลังจากอัพเดตสถานะ
+      setTimeout(() => {
+        fetchOrders();
+      }, 1000); // เพิ่มเวลารอเป็น 1 วินาที
       
     } catch (error) {
       console.error('Error updating order status:', error);
-      alert(`เกิดข้อผิดพลาด: ไม่สามารถอัพเดตสถานะได้`);
+      alert(`เกิดข้อผิดพลาด: ${error.message || 'ไม่สามารถอัพเดตสถานะได้'}`);
     }
   };
 
@@ -293,13 +353,19 @@ const FoodOrderTable = () => {
                           <>
                             <Button 
                               className="bg-[#B8FFBD] hover:bg-[#9eeba3] text-black hover:text-white"
-                              onClick={() => updateOrderStatus(order.id, order.name, 'เสิร์ฟแล้ว')}
+                              onClick={() => {
+                                console.log("Serve button clicked:", order);
+                                updateOrderStatus(order.orderID, order.menuItemID, 'เสิร์ฟแล้ว', order.orderItemID);
+                              }}
                             >
                               เสิร์ฟแล้ว
                             </Button>
                             <Button 
                               variant="destructive"
-                              onClick={() => updateOrderStatus(order.id, order.name, 'ยกเลิกแล้ว')}
+                              onClick={() => {
+                                console.log("Cancel button clicked:", order);
+                                updateOrderStatus(order.orderID, order.menuItemID, 'ยกเลิกแล้ว', order.orderItemID);
+                              }}
                             >
                               ยกเลิก
                             </Button>

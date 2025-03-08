@@ -38,11 +38,13 @@ export async function POST(request: Request) {
       const newOrderItems = await Promise.all(items.map(async (item: any) => {
         // ตรวจสอบว่ามีรายการนี้ในออเดอร์เดิมหรือไม่
         const existingItem = existingOrderItems.find(
-          (orderItem: any) => orderItem.MenuItems_menuItemsID === item.MenuItems_menuItemsID
+          (orderItem: any) => 
+            orderItem.MenuItems_menuItemsID === item.MenuItems_menuItemsID && 
+            orderItem.menuStatus === 'PENDING' // เฉพาะรายการที่ยังรอดำเนินการเท่านั้น
         );
         
         if (existingItem) {
-          // ถ้ามีรายการนี้อยู่แล้ว ให้อัพเดทจำนวน
+          // ถ้ามีรายการนี้อยู่แล้วและยังรอดำเนินการ ให้อัพเดทจำนวน
           return prisma.orderItem.update({
             where: {
               id: existingItem.id
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
             }
           });
         } else {
-          // ถ้ายังไม่มีรายการนี้ ให้สร้างรายการใหม่
+          // ถ้ายังไม่มีรายการนี้หรือรายการเดิมได้เสิร์ฟหรือยกเลิกไปแล้ว ให้สร้างรายการใหม่
           return prisma.orderItem.create({
             data: {
               Orders_orderID: existingOrder.orderID,

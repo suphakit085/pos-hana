@@ -33,6 +33,8 @@ interface OrderItem {
   orderID: number;
   menuItemID: number;
   quantity: number;
+  menuItem?: MenuItem;
+  status?: string;
 }
 
 interface OrderDetails {
@@ -427,6 +429,9 @@ const OrderPage = () => {
   const [buffetTypeName, setBuffetTypeName] = useState<string>("");
   const [orderClosed, setOrderClosed] = useState(false);
   const [meatType, setMeatType] = useState<'all' | 'pork' | 'beef'>('all');
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotification, setShowNotification] = useState(false);
+  const [currentNotification, setCurrentNotification] = useState<any>(null);
 
   // ใช้ tableId ในการดึงข้อมูลโต๊ะหรือออเดอร์เมื่อคอมโพเนนต์โหลด
   useEffect(() => {
@@ -523,6 +528,76 @@ const OrderPage = () => {
     }
   }, [tableId]);
 
+  // เชื่อมต่อกับ Server-Sent Events (SSE) เพื่อรับการแจ้งเตือน
+  useEffect(() => {
+    if (!currentTable?.tabId) return;
+    
+    const tableId = currentTable.tabId.toString();
+    console.log("Connecting to notification service for table:", tableId);
+    
+    // สร้าง EventSource เพื่อเชื่อมต่อกับ SSE
+    const eventSource = new EventSource(`/api/orders/notifications?tableId=${tableId}`);
+    
+    // รับข้อมูลเมื่อมีการส่งข้อมูลมาจากเซิร์ฟเวอร์
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received notification:", data);
+        
+        // เพิ่มการแจ้งเตือนใหม่ลงในรายการ
+        setNotifications(prev => [...prev, data]);
+        
+        // แสดงการแจ้งเตือนล่าสุด
+        if (data.type === 'order_cancelled') {
+          setCurrentNotification(data);
+          setShowNotification(true);
+          
+          // ซ่อนการแจ้งเตือนหลังจาก 5 วินาที
+          setTimeout(() => {
+            setShowNotification(false);
+          }, 5000);
+        }
+      } catch (error) {
+        console.error("Error parsing notification:", error);
+      }
+    };
+    
+    // จัดการกับข้อผิดพลาด
+    eventSource.onerror = (error) => {
+      console.error("EventSource error:", error);
+      eventSource.close();
+    };
+    
+    // ปิดการเชื่อมต่อเมื่อคอมโพเนนต์ถูกทำลาย
+    return () => {
+      console.log("Closing notification connection");
+      eventSource.close();
+    };
+  }, [currentTable?.tabId]);
+
+  // ดึงข้อมูลประวัติการสั่งอาหารจาก API
+  useEffect(() => {
+    if (!currentTable?.tabId) return;
+    
+    const fetchOrderHistory = async () => {
+      try {
+        const response = await fetch(`/api/orders/history?tableId=${currentTable.tabId}`);
+        
+        if (!response.ok) {
+          throw new Error('ไม่สามารถดึงข้อมูลประวัติการสั่งอาหารได้');
+        }
+        
+        const data = await response.json();
+        console.log("Order history loaded:", data);
+        setOrderHistory(data);
+      } catch (error) {
+        console.error("Error fetching order history:", error);
+      }
+    };
+    
+    fetchOrderHistory();
+  }, [currentTable?.tabId]);
+
   // ดึงข้อมูลเมนูจาก API
   useEffect(() => {
     setLoading(true);
@@ -599,7 +674,7 @@ const OrderPage = () => {
         };
 
         // ส่งข้อมูลไปยัง API ใหม่
-        const response = await fetch('/api/orders/submit-menu', {
+        const orderResponse = await fetch('/api/orders/submit-menu', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -607,11 +682,11 @@ const OrderPage = () => {
           body: JSON.stringify(orderData),
         });
 
-        if (!response.ok) {
+        if (!orderResponse.ok) {
           throw new Error('ไม่สามารถสร้างออเดอร์ได้');
         }
 
-        const result = await response.json();
+        const result = await orderResponse.json();
         console.log('Order processed:', result);
 
         // เพิ่มในประวัติการสั่งอาหาร
@@ -624,12 +699,13 @@ const OrderPage = () => {
           items: selectedItems.map(item => ({
             orderID: 0,
             menuItemID: item.menuItemID,
-            quantity: item.quantity
+            quantity: item.quantity,
+            menuItem: item.menuItem
           }))
         };
 
         // Add to order history
-        setOrderHistory([...orderHistory, newOrder]);
+        setOrderHistory([newOrder, ...orderHistory]);
 
         // Clear current order
         setSelectedItems([]);
@@ -639,6 +715,13 @@ const OrderPage = () => {
           alert('สร้างออเดอร์ใหม่สำเร็จ!');
         } else {
           alert('เพิ่มรายการในออเดอร์เดิมสำเร็จ!');
+        }
+        
+        // ดึงข้อมูลประวัติการสั่งอาหารใหม่
+        const historyResponse = await fetch(`/api/orders/history?tableId=${currentTable.tabId}`);
+        if (historyResponse.ok) {
+          const data = await historyResponse.json();
+          setOrderHistory(data);
         }
       } catch (error) {
         console.error('Error creating order:', error);
@@ -816,11 +899,70 @@ const OrderPage = () => {
                       </p>
                       <div className="space-y-2">
                         {order.items.map((item) => {
+                          // กำหนดสถานะของรายการอาหาร
+                          let statusText = '';
+                          let statusColor = '';
+                          let isItemCancelled = false;
+                          
+                          if (item.status) {
+                            switch(item.status) {
+                              case 'PENDING':
+                                statusText = 'รอดำเนินการ';
+                                statusColor = 'text-yellow-600';
+                                break;
+                              case 'SERVED':
+                                statusText = 'เสิร์ฟแล้ว';
+                                statusColor = 'text-green-600';
+                                break;
+                              case 'CANCELLED':
+                                statusText = 'ยกเลิกแล้ว';
+                                statusColor = 'text-red-600';
+                                isItemCancelled = true;
+                                break;
+                              default:
+                                statusText = item.status;
+                                statusColor = 'text-gray-600';
+                            }
+                          }
+                          
+                          // ถ้ามี menuItem ใน item ให้ใช้ข้อมูลจาก item โดยตรง
+                          if (item.menuItem) {
+                            return (
+                              <div key={`${order.orderID}-${item.menuItemID}`} className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
+                                    {item.menuItem.NameTHA} x {item.quantity}
+                                  </span>
+                                  {statusText && (
+                                    <span className={`ml-2 text-xs ${statusColor} font-medium`}>
+                                      ({statusText})
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
+                                  {item.menuItem.menuItemsPrice * item.quantity} บาท
+                                </span>
+                              </div>
+                            );
+                          }
+                          
+                          // ถ้าไม่มี menuItem ใน item ให้ค้นหาจาก menuItems
                           const menuItem = menuItems.find(m => m.menuItemID === item.menuItemID);
                           return menuItem ? (
-                            <div key={`${order.orderID}-${item.menuItemID}`} className="flex justify-between">
-                              <span>{menuItem.NameTHA} x {item.quantity}</span>
-                              <span>{menuItem.menuItemsPrice * item.quantity} บาท</span>
+                            <div key={`${order.orderID}-${item.menuItemID}`} className="flex justify-between items-center">
+                              <div className="flex-1">
+                                <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
+                                  {menuItem.NameTHA} x {item.quantity}
+                                </span>
+                                {statusText && (
+                                  <span className={`ml-2 text-xs ${statusColor} font-medium`}>
+                                    ({statusText})
+                                  </span>
+                                )}
+                              </div>
+                              <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
+                                {menuItem.menuItemsPrice * item.quantity} บาท
+                              </span>
                             </div>
                           ) : null;
                         })}
@@ -1059,6 +1201,29 @@ const OrderPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* แสดงการแจ้งเตือนเมื่อมีการยกเลิกรายการอาหาร */}
+      {showNotification && currentNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md flex items-center">
+          <div className="mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-bold">การแจ้งเตือน</p>
+            <p className="text-sm">{currentNotification.message}</p>
+          </div>
+          <button 
+            onClick={() => setShowNotification(false)}
+            className="ml-auto text-red-700 hover:text-red-900"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
