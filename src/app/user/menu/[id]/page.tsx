@@ -612,7 +612,7 @@ const OrderPage = () => {
         }
 
         const result = await response.json();
-        console.log('Order created:', result);
+        console.log('Order processed:', result);
 
         // เพิ่มในประวัติการสั่งอาหาร
         const newOrder: OrderDetails = {
@@ -635,7 +635,11 @@ const OrderPage = () => {
         setSelectedItems([]);
 
         // แสดงข้อความแจ้งเตือน
-        alert('สั่งอาหารสำเร็จ!');
+        if (result.isNewOrder) {
+          alert('สร้างออเดอร์ใหม่สำเร็จ!');
+        } else {
+          alert('เพิ่มรายการในออเดอร์เดิมสำเร็จ!');
+        }
       } catch (error) {
         console.error('Error creating order:', error);
         alert('เกิดข้อผิดพลาดในการสั่งอาหาร กรุณาลองใหม่อีกครั้ง');

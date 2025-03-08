@@ -37,6 +37,7 @@ function CheckbillPage() {
   const [billPaid, setBillPaid] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'PENDING' | 'PAID'>('PENDING');
   const [shouldCloseOrder, setShouldCloseOrder] = useState(true);
+  const [paymentDateTime, setPaymentDateTime] = useState<Date | null>(null);
   
   const searchParams = useSearchParams();
   const tableId = searchParams.get('tableId') || '';
@@ -161,6 +162,10 @@ function CheckbillPage() {
       // เปลี่ยนสถานะการชำระเงินเป็น "ชำระแล้ว"
       setPaymentStatus('PAID');
       
+      // บันทึกเวลาที่ชำระเงิน
+      const currentDateTime = new Date();
+      setPaymentDateTime(currentDateTime);
+      
       let success = true;
       
       // ตัดตัวอักษร "T" ออกจาก tableId ถ้ามี
@@ -201,6 +206,11 @@ function CheckbillPage() {
         } else {
           const result = await response.json();
           console.log("บันทึกข้อมูลการชำระเงินสำเร็จ:", result);
+          
+          // อัพเดทเวลาที่ชำระเงินจาก API response ถ้ามี
+          if (result.paymentDateTime) {
+            setPaymentDateTime(new Date(result.paymentDateTime));
+          }
         }
       } catch (err) {
         console.error("เกิดข้อผิดพลาดในการบันทึกข้อมูลการชำระเงิน:", err);
@@ -464,6 +474,22 @@ function CheckbillPage() {
                     {billData.paymentMethod === 'promptpay' && 'พร้อมเพย์'}
                   </span>
                 </div>
+                {paymentDateTime && (
+                  <div className="flex justify-between mt-2">
+                    <span className="font-medium">เวลาที่ชำระเงิน:</span>
+                    <span>
+                      {paymentDateTime.toLocaleDateString('th-TH', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })} {paymentDateTime.toLocaleTimeString('th-TH', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

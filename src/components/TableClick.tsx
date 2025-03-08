@@ -30,6 +30,40 @@ function TableClick({ tableId, tableStatus, customerCount, tableType = "normal",
       return;
     }
     
+    if (action === 'qrcode') {
+      // ดึง ID ของโต๊ะ (ตัดตัวอักษร T ออก)
+      let cleanTableId = tableId;
+      if (tableId.startsWith('T') || tableId.startsWith('t')) {
+        cleanTableId = tableId.substring(1);
+      }
+      
+      // ดึงข้อมูลออเดอร์ของโต๊ะนี้ก่อน เพื่อให้ได้ orderItemId
+      fetch(`/api/orders?tableId=${cleanTableId}&status=active`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้');
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.length > 0) {
+            const latestOrder = data[0]; // ใช้ออเดอร์ล่าสุด
+            // นำทางไปยังหน้า QR Code โดยใช้ orderItemId
+            window.location.href = `/admin/qrcode/${latestOrder.orderItemId}`;
+          } else {
+            alert('ไม่พบออเดอร์ที่เปิดอยู่สำหรับโต๊ะนี้');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching order data:', error);
+          alert('เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์: ' + error.message);
+        })
+        .finally(() => {
+          onClose(); // ปิด TableClick
+        });
+      return;
+    }
+    
     setModalAction(action);
     setIsModalOpen(true);
   };

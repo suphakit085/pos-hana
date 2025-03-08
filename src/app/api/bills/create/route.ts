@@ -11,6 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     
+    // เก็บเวลาปัจจุบันเป็นเวลาที่ชำระเงิน
+    const paymentDateTime = new Date();
+    
     // สร้างบิลใหม่
     const newBill = await prisma.bill.create({
       data: {
@@ -28,7 +31,8 @@ export async function POST(request: Request) {
         payment: {
           create: {
             paymentTypes: paymentMethod || 'cash',
-            totalAmount: totalAmount
+            totalAmount: totalAmount,
+            // ไม่ต้องระบุ paymentDatetime เพราะมีค่าเริ่มต้นเป็น @default(now()) ในโมเดล
           }
         }
       }
@@ -36,7 +40,8 @@ export async function POST(request: Request) {
     
     return NextResponse.json({
       message: "Bill created successfully",
-      billId: newBill.billID
+      billId: newBill.billID,
+      paymentDateTime: paymentDateTime // ส่งเวลาที่ชำระเงินกลับไปด้วย
     }, { status: 201 });
   } catch (error: any) {
     console.error("Error creating bill:", error);

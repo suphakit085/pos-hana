@@ -126,6 +126,7 @@ model Payment {
   totalAmount   Float
   Bill_billID   Int      @unique
   bill          Bill     @relation(fields: [Bill_billID], references: [billID])
+  paymentDatetime   DateTime @default(now())
 }
 
 model Stock {
