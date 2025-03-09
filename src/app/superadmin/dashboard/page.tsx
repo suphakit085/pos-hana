@@ -317,40 +317,9 @@ export default function SuperadminDashboard() {
           <p className="text-gray-500">ข้อมูลรายได้และยอดขายของร้าน</p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">สาขา</span>
-          <Select 
-            value={selectedBranch} 
-            onValueChange={handleBranchChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="เลือกสาขา" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">- ทั้งหมด -</SelectItem>
-              <SelectItem value="central">สาขากลาง</SelectItem>
-              <SelectItem value="north">สาขาเหนือ</SelectItem>
-              <SelectItem value="south">สาขาใต้</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button variant="outline" onClick={() => {
-            toast.success("รีเฟรชข้อมูลเรียบร้อย");
-            // ดึงข้อมูลใหม่ตามสาขาที่เลือกอยู่
-            // ให้เรียกใช้ API เดียวกับใน useEffect
-          }}>
-            ค้นหา
-          </Button>
-        </div>
       </div>
       
       {/* แจ้งเตือนล่าสุด */}
-      <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
-        <p className="text-amber-800">
-          <span className="font-semibold">สามารถดูข้อมูล</span> ก่อนวันที่ 17 มกราคม พ.ศ. 2569 ได้{' '}
-          <a href="#" className="text-blue-600 underline">ที่นี่</a>
-        </p>
-      </div>
       
       {loading ? (
         // แสดงสถานะกำลังโหลด
@@ -370,21 +339,6 @@ export default function SuperadminDashboard() {
                     <p className="text-4xl font-bold text-green-500">{formatCurrency(totalSales)} <span className="text-base text-gray-500">บาท</span></p>
                     
                     <div className="mt-8 space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">ต้นทุน ({costPercent}%)</span>
-                        <span className="text-sm font-medium">{formatCurrency(costAmount)} บาท</span>
-                      </div>
-                      <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-400 rounded-full" 
-                          style={{ width: `${costPercent}%` }}
-                        ></div>
-                      </div>
-                      
-                      <div className="flex justify-between mt-2">
-                        <span className="text-sm text-gray-600">กำไร ({profitPercent}%)</span>
-                        <span className="text-sm font-medium">{formatCurrency(profitAmount)} บาท</span>
-                      </div>
                       <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-green-400 rounded-full" 
@@ -474,7 +428,7 @@ export default function SuperadminDashboard() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center border-r">
                     <div className="flex items-center justify-center gap-1">
                       <span className="w-3 h-3 rounded-full bg-green-500"></span>
@@ -493,14 +447,7 @@ export default function SuperadminDashboard() {
                     <p className="text-xs text-gray-500">{formatCurrency(pendingSales)} บาท</p>
                   </div>
                   
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <span className="w-3 h-3 rounded-full bg-gray-400"></span>
-                      <span className="text-sm text-gray-500">การยกเลิก</span>
-                    </div>
-                    <p className="text-3xl font-bold text-center">{cancelledOrders} <span className="text-xs">บิล</span></p>
-                    <p className="text-xs text-gray-500">{formatCurrency(cancelledSales)} บาท</p>
-                  </div>
+                  
                 </div>
               </CardContent>
             </Card>
@@ -574,7 +521,7 @@ export default function SuperadminDashboard() {
           </Card>
           
           {/* แถวบัตรข้อมูลสินค้า */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* บัตรข้อมูลสินค้า */}
             <Card>
               <CardHeader className="pb-2 flex justify-between items-center">
@@ -635,185 +582,7 @@ export default function SuperadminDashboard() {
               </CardContent>
             </Card>
             
-            {/* บัตรข้อมูลสินค้าคงคลัง */}
-            <Card>
-              <CardHeader className="pb-2 flex justify-between items-center">
-                <CardTitle className="text-lg">สินค้าคงคลัง</CardTitle>
-                <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="flex flex-col items-center justify-center border rounded-lg p-6">
-                    <div className="mb-2">
-                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500">
-                        <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16v-3"/>
-                        <path d="m3.3 7 8.7 5 8.7-5"/>
-                        <path d="m12 22-9-4.9v-5.7"/>
-                        <path d="M15 16v4.3"/>
-                        <path d="M18 15.1v4"/>
-                        <path d="M12 12v10"/>
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-medium">มูลค่าเข้าสินค้า</h3>
-                    <p className="text-2xl font-bold mt-2">0 <span className="text-sm font-normal">บาท</span></p>
-                    <p className="text-sm text-gray-500 mt-1">จำนวน 0 รายการ</p>
-                  </div>
-                  
-                  <div className="flex flex-col items-center justify-center border rounded-lg p-6">
-                    <div className="mb-2">
-                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-medium">มูลค่าเสียหาย</h3>
-                    <p className="text-2xl font-bold mt-2">0 <span className="text-sm font-normal">บาท</span></p>
-                    <p className="text-sm text-gray-500 mt-1">จำนวน 0 รายการ</p>
-                  </div>
-                </div>
-                
-                {/* โปรโมชัน */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">โปรโมชัน</h3>
-                    <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-center">
-                    <div className="w-40 h-40 relative">
-                      <div className="w-full h-full rounded-full bg-gray-200">
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-5xl font-bold">0</span>
-                          <span className="text-sm mt-1">โปรโมชัน</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">ส่วนลดจากการใช้โปรโมชัน</span>
-                      <span className="font-medium">0 บาท</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">ส่วนลดทั้งหมด 0 รายการ</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">จำนวนบิลที่ใช้โปรโมชัน</span>
-                      <span className="font-medium">0 <span className="text-xs">%</span></span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">จำนวน 0/0 บิล</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
             
-            {/* บัตรข้อมูลลูกค้า */}
-            <Card>
-              <CardHeader className="pb-2 flex justify-between items-center">
-                <CardTitle className="text-lg">ลูกค้า</CardTitle>
-                <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="bg-gray-50 p-4 rounded-md text-center">
-                    <p className="text-sm font-medium">ลูกค้าทั้งหมด</p>
-                    <p className="text-2xl font-bold mt-1">{customerStats.totalCustomers}</p>
-                    <p className="text-xs text-gray-500 mt-1">เฉลี่ยต่อวัน {customerStats.totalCustomers} คน</p>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-md text-center">
-                    <p className="text-sm font-medium">จ่ายเงินเฉลี่ย</p>
-                    <p className="text-2xl font-bold mt-1">{customerStats.averageSpendPerCustomer.toFixed(2)} <span className="text-xs font-normal">บาท/คน</span></p>
-                    <p className="text-xs text-gray-500 mt-1">เฉลี่ยต่อบิล {customerStats.averageBillAmount.toFixed(2)} บาท</p>
-                  </div>
-                </div>
-                
-                {/* โต๊ะ */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">โต๊ะ</h3>
-                    <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <p className="text-sm text-gray-500">จำนวนการใช้โต๊ะ</p>
-                      <p className="text-xl font-bold mt-1">{tableStats.totalTablesUsed} <span className="text-xs font-normal">ครั้ง/โต๊ะ/วัน</span></p>
-                      <p className="text-xs text-gray-500 mt-1">เฉลี่ยต่อวัน {Math.round(tableStats.totalTablesUsed / 3.54)}</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <p className="text-sm text-gray-500">เวลาเฉลี่ย</p>
-                      <p className="text-xl font-bold mt-1">{tableStats.averageTimePerTable.toFixed(2)} <span className="text-xs font-normal">ชั่วโมง</span></p>
-                      <p className="text-xs text-gray-500 mt-1">สูงสุด {tableStats.maxTimePerTable.toFixed(2)} ชั่วโมง</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <p className="text-sm text-gray-500">ลูกค้าต่อโต๊ะ</p>
-                      <p className="text-xl font-bold mt-1">{tableStats.customersPerTable} <span className="text-xs font-normal">คน/โต๊ะ</span></p>
-                      <p className="text-xs text-gray-500 mt-1">จำนวน {tableStats.totalTablesUsed} คน</p>
-                    </div>
-                    
-                    <div className="bg-gray-50 p-3 rounded-md text-center">
-                      <p className="text-sm text-gray-500">สั่งอาหารเฉลี่ย</p>
-                      <p className="text-xl font-bold mt-1">{tableStats.ordersPerTable} <span className="text-xs font-normal">รายการ/โต๊ะ</span></p>
-                      <p className="text-xs text-gray-500 mt-1">สูงสุด {tableStats.maxOrdersPerTable} รายการ</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* พนักงาน */}
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">พนักงาน</h3>
-                    <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm">แก้ไขโปรไฟล์</span>
-                      <span className="font-medium">{staffActivities.profileEdits}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">แก้ไขรูปแบบโต๊ะ</span>
-                      <span className="font-medium">{staffActivities.tableLayoutEdits}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">แก้ไขเมนูเพิ่มเติม</span>
-                      <span className="font-medium">{staffActivities.menuEdits}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">เปิดบิล</span>
-                      <span className="font-medium">{staffActivities.billsOpened}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">ส่งรายการ</span>
-                      <span className="font-medium">{staffActivities.ordersPlaced}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">จำหน่าย</span>
-                      <span className="font-medium">{staffActivities.transactions}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">เปิดบิลรีเทิร์น</span>
-                      <span className="font-medium">{staffActivities.returnBills}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">ยกเลิกรายการ</span>
-                      <span className="font-medium">{staffActivities.cancelledItems}</span>
-                    </div>
-                    <div className="flex justify-between font-medium pt-2 border-t">
-                      <span>รวม</span>
-                      <span>{staffActivities.total}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </>
       )}
