@@ -44,15 +44,18 @@ model Reservations {
 }
 
 model Employee {
-  empID         Int           @id @default(autoincrement())
-  empFname      String
-  empLname      String
-  empPhone      String
-  position      String
-  salary        Float
-  orders        Orders[]
-  stockIns      Stock_In[]
-  timeScription TimeScription[]
+  empID     Int      @id @default(autoincrement())
+  empFname  String
+  empLname  String
+  empPhone  String
+  position  String
+  salary    Float
+  orders    Orders[]
+  stockIns  Stock_In[]
+
+  TimeScription TimeScription[]
+
+  canceledStockIns Stock_In[] @relation("CanceledByEmployee")
 }
 
 model Orders {
@@ -132,45 +135,66 @@ model Payment {
 }
 
 model Stock {
-  stockID        Int      @id @default(autoincrement())
-  ingredientName String   @unique
+  stockID        Int     @id @default(autoincrement())
+  ingredientName String  @unique
   costPrice      Float
   Unit           String
-  Quantity       Float    @default(0)
-  LastUpdated    DateTime @default(now())
+  Quantity       Float   @default(0)
+  minQuantity    Float  @default(0)
+  LastUpdated    DateTime
+  imageUrl     String?
+  isDeleted      Boolean @default(false)  // เพิ่มฟิลด์ใหม่
+  deletedAt      DateTime?  // เพิ่มฟิลด์เก็บเวลาที่ลบ
   timeScription  TimeScription[]
   stockInDetail  Stock_In_Detail[]
+
 }
 
 model TimeScription {
-  Employee_empID Int
-  Stock_stockID  Int
-  tsCreatedAt    DateTime? @default(now())
-  Unit           String?
-  Quantity       Float?
-  employee       Employee  @relation(fields: [Employee_empID], references: [empID])
-  stock          Stock     @relation(fields: [Stock_stockID], references: [stockID])
-  @@id([Employee_empID, Stock_stockID])
+  TimeScriptionID Int      @id @default(autoincrement())
+  Employee_empID  Int
+  Stock_stockID   Int
+  tsCreatedAt     DateTime?
+  Unit            String?
+  Quantity        Float?
+  note            String?
+
+  employee Employee @relation(fields: [Employee_empID], references: [empID])
+  stock    Stock    @relation(fields: [Stock_stockID], references: [stockID])
+  
+  // เพิ่ม indexes เพื่อประสิทธิภาพในการค้นหา
+  @@index([Employee_empID])
+  @@index([Stock_stockID])
 }
 
+
 model Stock_In {
-  stockInID      Int      @id @default(autoincrement())
-  stockInDateTime DateTime @default(now())
-  totalPrice     Float
-  employee       Employee @relation(fields: [Employee_empID], references: [empID])
-  stockInDetail  Stock_In_Detail[]
+  stockInID       Int      @id @default(autoincrement())
+  stockInDateTime DateTime
+  totalPrice      Float
   Employee_empID Int
+  note String?
+  isCanceled     Boolean  @default(false)    // เพิ่มฟิลด์สถานะการยกเลิก
+  canceledAt     DateTime?                   // เพิ่มเวลาที่ยกเลิก
+  cancelNote     String?                     // เพิ่มหมายเหตุการยกเลิก
+  canceledBy     Int?                  // เพิ่มรหัสพนักงานที่ยกเลิก
+
+  canceledByEmployee Employee? @relation("CanceledByEmployee", fields: [canceledBy], references: [empID])
+  employee        Employee @relation(fields: [Employee_empID], references: [empID])
+  stockInDetail   Stock_In_Detail[]
+
 }
 
 model Stock_In_Detail {
-  stockInDetailID    Int      @id @default(autoincrement())
-  stockIn            Stock_In @relation(fields: [Stock_In_stockInID], references: [stockInID])
-  stock              Stock    @relation(fields: [Stock_stockID], references: [stockID])
-  ingredientName     String
-  quantity           Float
-  unit               String
-  pricePerUnit       Float
-  totalPrice         Float
+  stockInDetailID Int      @id @default(autoincrement())
+  stockIn        Stock_In  @relation(fields: [Stock_In_stockInID], references: [stockInID])
+  stock          Stock     @relation(fields: [Stock_stockID], references: [stockID])
+  ingredientName String
+  quantity       Float
+  unit           String
+  pricePerUnit   Float
+  totalPrice     Float
+
   Stock_In_stockInID Int
   Stock_stockID      Int
 }

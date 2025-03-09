@@ -55,7 +55,7 @@ export async function GET(
 }
 
 // PUT: อัพเดตสถานะการจอง
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -70,16 +70,16 @@ export async function PUT(
         resID: parseInt(id), // Convert string ID to number
       },
       data: {
-        resStatus: body.status,
+        resStatus: body.resStatus, // Use resStatus from the request body
       },
     });
 
     return NextResponse.json(updatedReservation);
   } catch (error) {
-    console.error('Error updating reservation:', error);
+    console.error('Error updating reservation status:', error);
     return NextResponse.json(
-      { error: 'Failed to update reservation' },
+      { error: 'Failed to update reservation status' },
       { status: 500 }
     );
   }
-} 
+}
