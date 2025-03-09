@@ -1,8 +1,7 @@
-// api/tables/route.ts
+// src/app/api/tables/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { NextRequest } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -48,25 +47,42 @@ export async function GET() {
     return NextResponse.json(formattedTables);
   } catch (error) {
     console.error("Error fetching tables:", error);
-    return NextResponse.json({ error: "Failed to fetch tables" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to fetch tables", 
+      details: (error as Error).message 
+    }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request) {
+// POST: สร้างโต๊ะใหม่
+export async function POST(request: NextRequest) {
   try {
-    const { tableId, status } = await request.json();
+    const body = await request.json();
+    const { tabTypes, tabStatus } = body;
     
-    // อัปเดตสถานะโต๊ะ
-    const updatedTable = await prisma.tables.update({
-      where: { tabID: tableId }, 
-      data: { 
-        tabStatus: status,
+    if (!tabTypes) {
+      return NextResponse.json({ error: "Table type is required" }, { status: 400 });
+    }
+    
+    const newTable = await prisma.tables.create({
+      data: {
+        tabTypes,
+        tabStatus: tabStatus || "ว่าง"
       }
     });
     
-    return NextResponse.json(updatedTable);
+    return NextResponse.json({
+      message: "Table created successfully",
+      table: newTable
+    }, { status: 201 });
   } catch (error) {
-    console.error("Error updating table:", error);
-    return NextResponse.json({ error: "Failed to update table" }, { status: 500 });
+    console.error("Error creating table:", error);
+    return NextResponse.json({ 
+      error: "Failed to create table", 
+      details: (error as Error).message 
+    }, { status: 500 });
   }
 }
+
+// ลบ PUT endpoint ระดับ collection ที่นี่ เพื่อป้องกันความสับสน
+// ให้ใช้ PUT endpoint ที่อยู่ใน [id]/route.ts แทน

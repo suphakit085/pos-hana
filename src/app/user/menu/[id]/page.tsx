@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 
 // interfaces
 interface Tables {
@@ -413,7 +414,9 @@ const categoryTranslations: Record<MenuItem['category'] | 'all', string> = {
 const OrderPage = () => {
   // ดึงค่า ID จาก URL
   const params = useParams();
-  const tableId = params.id as string;
+  // ใช้ destructuring เพื่อแกะค่า id จาก params
+  const { id } = params;
+  const tableId = id as string;
   
   // State variables
   const [currentTable, setCurrentTable] = useState<Tables | null>(tableData[0]);
@@ -535,20 +538,22 @@ const OrderPage = () => {
     const tableId = currentTable.tabId.toString();
     console.log("Connecting to notification service for table:", tableId);
     
-    // สร้าง EventSource เพื่อเชื่อมต่อกับ SSE
-    const eventSource = new EventSource(`/api/orders/notifications?tableId=${tableId}`);
+    let eventSource: EventSource | null = null;
     
-    // รับข้อมูลเมื่อมีการส่งข้อมูลมาจากเซิร์ฟเวอร์
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log("Received notification:", data);
-        
-        // เพิ่มการแจ้งเตือนใหม่ลงในรายการ
-        setNotifications(prev => [...prev, data]);
-        
-        // แสดงการแจ้งเตือนล่าสุด
-        if (data.type === 'order_cancelled') {
+    try {
+      // สร้าง EventSource เพื่อเชื่อมต่อกับ SSE
+      eventSource = new EventSource(`/api/orders/notifications?tableId=${tableId}`);
+      
+      // รับข้อมูลเมื่อมีการส่งข้อมูลมาจากเซิร์ฟเวอร์
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Received notification:", data);
+          
+          // เพิ่มการแจ้งเตือนใหม่ลงในรายการ
+          setNotifications(prev => [...prev, data]);
+          
+          // แสดงการแจ้งเตือนล่าสุด
           setCurrentNotification(data);
           setShowNotification(true);
           
@@ -556,22 +561,33 @@ const OrderPage = () => {
           setTimeout(() => {
             setShowNotification(false);
           }, 5000);
+        } catch (error) {
+          console.error("Error parsing notification:", error);
         }
-      } catch (error) {
-        console.error("Error parsing notification:", error);
-      }
-    };
-    
-    // จัดการกับข้อผิดพลาด
-    eventSource.onerror = (error) => {
-      console.error("EventSource error:", error);
-      eventSource.close();
-    };
+      };
+      
+      // จัดการกับข้อผิดพลาด
+      eventSource.onerror = (error) => {
+        console.error("EventSource error:", error);
+        // ลองเชื่อมต่อใหม่หลังจาก 5 วินาที
+        setTimeout(() => {
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+        }, 5000);
+      };
+    } catch (error) {
+      console.error("Error creating EventSource:", error);
+    }
     
     // ปิดการเชื่อมต่อเมื่อคอมโพเนนต์ถูกทำลาย
     return () => {
       console.log("Closing notification connection");
-      eventSource.close();
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
     };
   }, [currentTable?.tabId]);
 
@@ -601,14 +617,18 @@ const OrderPage = () => {
   // ดึงข้อมูลเมนูจาก API
   useEffect(() => {
     setLoading(true);
-    fetch('/api/menuItems')
-      .then(response => {
+    setError(null);
+    
+    const fetchMenuItems = async () => {
+      try {
+        const response = await fetch('/api/menuItems');
+        
         if (!response.ok) {
           throw new Error('ไม่สามารถดึงข้อมูลเมนูได้');
         }
-        return response.json();
-      })
-      .then(data => {
+        
+        const data = await response.json();
+        
         // แปลงข้อมูลจาก API ให้ตรงกับ interface MenuItem
         const formattedData: MenuItem[] = data.map((item: any) => ({
           menuItemID: item.menuItemsID,
@@ -621,15 +641,18 @@ const OrderPage = () => {
           category: item.category as MenuItem['category'],
           buffetTypeID: item.BuffetTypes_buffetTypeID
         }));
+        
         console.log("Menu items loaded:", formattedData);
         setMenuItems(formattedData);
         setLoading(false);
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error fetching menu items:", error);
-        setError("ไม่สามารถดึงข้อมูลเมนูได้");
+        setError("ไม่สามารถดึงข้อมูลเมนูได้ กรุณาลองใหม่อีกครั้ง");
         setLoading(false);
-      });
+      }
+    };
+    
+    fetchMenuItems();
   }, []);
 
   // Order management functions 
@@ -812,7 +835,15 @@ const OrderPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
           </div>
           <h2 className="text-2xl font-bold mb-4">กำลังโหลดข้อมูล</h2>
-          <p className="text-gray-700">กรุณารอสักครู่...</p>
+          <p className="text-gray-700 mb-4">กรุณารอสักครู่...</p>
+          <p className="text-sm text-gray-500">หากรอนานเกินไป กรุณากดปุ่มด้านล่าง</p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.location.reload()}
+          >
+            โหลดใหม่
+          </Button>
         </div>
       </div>
     );
@@ -828,15 +859,21 @@ const OrderPage = () => {
               <h2 className="text-2xl font-bold text-red-500 mb-4">
                 {orderClosed ? 'ออเดอร์ถูกปิดแล้ว' : 'เกิดข้อผิดพลาด'}
               </h2>
-              <p className="mb-6">{error}</p>
-              {orderClosed && (
-                <p className="mb-6 text-gray-600">
-                  ออเดอร์นี้ถูกปิดแล้ว เนื่องจากมีการชำระเงินเรียบร้อยแล้ว ไม่สามารถสั่งอาหารได้อีก
-                </p>
-              )}
-              <Button onClick={() => window.location.href = '/'}>
-                กลับไปหน้าหลัก
-              </Button>
+              <p className="text-gray-700 mb-6">{error}</p>
+              <div className="flex justify-center space-x-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.reload()}
+                >
+                  ลองใหม่
+                </Button>
+                <Button 
+                  variant="default"
+                  onClick={() => window.location.href = '/'}
+                >
+                  กลับหน้าหลัก
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1126,12 +1163,12 @@ const OrderPage = () => {
               <Card key={item.menuItemID} className="overflow-hidden">
                 <div className="relative h-48">
                   <img
-                    src={item.itemImage || "/placeholder-food.jpg"}
+                    src={item.itemImage || "/placeholder-food.svg"}
                     alt={item.NameTHA}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = "/placeholder-food.jpg";
+                      target.src = "/placeholder-food.svg";
                     }}
                   />
                   {item.NameTHA.includes('เนื้อวัว') || item.NameTHA.includes('เนื้อโคขุน') || item.NameENG.toLowerCase().includes('beef') ? (

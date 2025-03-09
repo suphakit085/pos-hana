@@ -2,16 +2,18 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { NextRequest } from 'next/server';
 
-// GET: ดึงข้อมูล MenuItem ตามประเภทบุฟเฟต์ (buffetTypeID)
+// GET: ดึงข้อมูล MenuItems ตามประเภทบุฟเฟต์
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const buffetTypeID = parseInt(params.id);
+    // ใช้ destructuring เพื่อแกะค่า id จาก params
+    const { id } = params;
+    const buffetTypeID = parseInt(id);
     
     if (isNaN(buffetTypeID)) {
-      return NextResponse.json({ error: "Invalid buffet type ID format" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid buffet type ID" }, { status: 400 });
     }
 
     // ตรวจสอบว่ามีประเภทบุฟเฟต์นี้หรือไม่

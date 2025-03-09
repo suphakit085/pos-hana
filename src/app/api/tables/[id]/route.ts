@@ -1,8 +1,7 @@
+// src/app/api/tables/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { NextRequest } from 'next/server';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/prisma';
 
 // GET: ดึงข้อมูลโต๊ะตาม ID
 export async function GET(
@@ -10,7 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id;
+    // ใช้ await เพื่อรอให้ params ถูกแกะค่าออกมา (ในกรณีที่เป็น Promise)
+    const { id } = params;
     
     // ลองแปลงเป็นตัวเลขและค้นหาด้วย tabID
     const numericId = parseInt(id);
@@ -60,7 +60,7 @@ export async function GET(
     return NextResponse.json(formattedTable);
   } catch (error) {
     console.error("Error fetching table:", error);
-    return NextResponse.json({ error: "Failed to fetch table" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch table", details: (error as Error).message }, { status: 500 });
   }
 }
 
@@ -70,7 +70,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params.id;
+    // ใช้ destructuring เพื่อแกะค่า id จาก params
+    const { id } = params;
     const numericId = parseInt(id);
     
     if (isNaN(numericId)) {
@@ -93,8 +94,9 @@ export async function PUT(
             resStatus: 'CONFIRMED',
             // ตรวจสอบการจองที่ยังไม่หมดอายุ (วันที่ปัจจุบันหรืออนาคต)
             resDate: {
-              gte: new Date().toISOString().split('T')[0]
-            }
+              gte: new Date()
+            },
+            deletedAt: null
           }
         }
       }
@@ -106,7 +108,10 @@ export async function PUT(
     
     // ตรวจสอบว่าโต๊ะถูกจองไว้หรือไม่
     if (existingTable.reservations.length > 0 && status === 'ว่าง') {
-      return NextResponse.json({ error: "Table is already reserved" }, { status: 400 });
+      return NextResponse.json({ 
+        error: "Table is already reserved", 
+        reservations: existingTable.reservations 
+      }, { status: 400 });
     }
     
     // อัพเดตสถานะโต๊ะ
@@ -124,6 +129,9 @@ export async function PUT(
     });
   } catch (error) {
     console.error("Error updating table status:", error);
-    return NextResponse.json({ error: "Failed to update table status" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to update table status", 
+      details: (error as Error).message 
+    }, { status: 500 });
   }
-} 
+}

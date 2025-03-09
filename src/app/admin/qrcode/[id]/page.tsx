@@ -14,11 +14,9 @@ interface OrderData {
 }
 
 export default function QRCodePage({ params }: { params: { id: string } }) {
-  // ใช้ params.id โดยตรง แต่ในอนาคตควรใช้ React.use()
-  // ตามคำแนะนำของ Next.js
-  const id = params.id;
-  
   const router = useRouter();
+  // ใช้ destructuring เพื่อแกะค่า id จาก params
+  const { id } = params;
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,24 +24,27 @@ export default function QRCodePage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchOrderData() {
       try {
-        console.log("Fetching order data for ID:", id);
         const response = await fetch(`/api/orders/get?id=${id}`);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch order data: ${response.statusText}`);
+          throw new Error('ไม่สามารถดึงข้อมูลออเดอร์ได้');
         }
         
         const data = await response.json();
-        console.log("Order data received:", data);
-        setOrderData(data);
-      } catch (err: any) {
-        console.error("Error fetching order data:", err);
-        setError(err.message || "Failed to fetch order data");
-      } finally {
+        setOrderData({
+          orderID: data.orderID,
+          orderItemId: data.orderItemId,
+          Tables_tabID: data.Tables_tabID,
+          tabName: data.tabName
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching order data:', error);
+        setError('ไม่สามารถดึงข้อมูลออเดอร์ได้');
         setLoading(false);
       }
     }
-    
+
     fetchOrderData();
   }, [id]);
 

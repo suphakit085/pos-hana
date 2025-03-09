@@ -1,3 +1,4 @@
+// src/app/api/tables/fix/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
@@ -47,6 +48,9 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error fixing tables:", error);
-    return NextResponse.json({ error: "Failed to fix tables" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to fix tables", 
+      details: (error as Error).message 
+    }, { status: 500 });
   }
-} 
+}

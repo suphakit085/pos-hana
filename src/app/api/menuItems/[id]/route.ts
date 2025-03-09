@@ -8,14 +8,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    // ใช้ destructuring เพื่อแกะค่า id จาก params
+    const { id } = params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
     const menuItem = await prisma.menuItems.findUnique({
-      where: { menuItemsID: id },
+      where: { menuItemsID: numericId },
       include: { buffetType: true }
     });
 
@@ -36,9 +38,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    // ใช้ destructuring เพื่อแกะค่า id จาก params
+    const { id } = params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
@@ -51,7 +55,7 @@ export async function PUT(
 
     // ตรวจสอบว่ามี MenuItem ที่ต้องการอัพเดตหรือไม่
     const existingMenuItem = await prisma.menuItems.findUnique({
-      where: { menuItemsID: id }
+      where: { menuItemsID: numericId }
     });
 
     if (!existingMenuItem) {
@@ -60,7 +64,7 @@ export async function PUT(
 
     // อัพเดตข้อมูล
     const updatedMenuItem = await prisma.menuItems.update({
-      where: { menuItemsID: id },
+      where: { menuItemsID: numericId },
       data: {
         menuItemNameTHA: body.menuItemNameTHA !== undefined ? body.menuItemNameTHA : undefined,
         menuItemNameENG: body.menuItemNameENG !== undefined ? body.menuItemNameENG : undefined,
@@ -85,15 +89,17 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    // ใช้ destructuring เพื่อแกะค่า id จาก params
+    const { id } = params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
 
     // ตรวจสอบว่ามี MenuItem ที่ต้องการลบหรือไม่
     const existingMenuItem = await prisma.menuItems.findUnique({
-      where: { menuItemsID: id }
+      where: { menuItemsID: numericId }
     });
 
     if (!existingMenuItem) {
@@ -102,7 +108,7 @@ export async function DELETE(
 
     // ลบข้อมูล
     await prisma.menuItems.delete({
-      where: { menuItemsID: id }
+      where: { menuItemsID: numericId }
     });
 
     return NextResponse.json({ message: "Menu item deleted successfully" });

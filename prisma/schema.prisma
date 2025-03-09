@@ -28,15 +28,17 @@ model Tables {
 }
 
 model Reservations {
-  resID              Int      @id @default(autoincrement())
+  resID              Int       @id @default(autoincrement())
   resName            String
-  resDate            String
-  resTime            String
+  resDate            DateTime   @db.Date// เปลี่ยนจาก String เป็น DateTime
+  resTime            DateTime     @db.Time(0)
   numberOfPeople     Int
-  resStatus          String?
-  resCreatedAt       DateTime @default(now())
-  customer           Customer @relation(fields: [Customer_customerID], references: [customerID])
-  table              Tables   @relation(fields: [Tables_tabID], references: [tabID])
+  resStatus          String?   @default("pending") // เพิ่ม default value
+  resCreatedAt       DateTime  @default(now())
+  resPhone            String
+  deletedAt          DateTime? // เพิ่มฟิลด์ deletedAt เพื่อรองรับ soft delete
+  customer           Customer  @relation(fields: [Customer_customerID], references: [customerID])
+  table              Tables    @relation(fields: [Tables_tabID], references: [tabID])
   Customer_customerID Int
   Tables_tabID       Int
 }
