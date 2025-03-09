@@ -8,50 +8,50 @@ datasource db {
 }
 
 model Customer {
-  customerID    Int      @id @default(autoincrement())
+  customerID    Int            @id @default(autoincrement())
   firstName     String
   lastName      String
   customerPhone String
-  CustomerEmail String   @unique
+  CustomerEmail String         @unique
   password      String
-  cusCreatedAt  DateTime @default(now())
+  cusCreatedAt  DateTime       @default(now())
   reservations  Reservations[]
 }
 
 model Tables {
-  tabID        Int           @id @default(autoincrement())
+  tabID        Int            @id @default(autoincrement())
   tabTypes     String
   tabStatus    String?
-  tabCreatedAt DateTime      @default(now())
+  tabCreatedAt DateTime       @default(now())
   reservations Reservations[]
   orders       Orders[]
 }
 
 model Reservations {
-  resID              Int       @id @default(autoincrement())
-  resName            String
-  resDate            DateTime   @db.Date// เปลี่ยนจาก String เป็น DateTime
-  resTime            DateTime     @db.Time(0)
-  numberOfPeople     Int
-  resStatus          String?   @default("pending") // เพิ่ม default value
-  resCreatedAt       DateTime  @default(now())
+  resID               Int       @id @default(autoincrement())
+  resName             String
+  resDate             DateTime  @db.Date // เปลี่ยนจาก String เป็น DateTime
+  resTime             DateTime  @db.Time(0)
+  numberOfPeople      Int
+  resStatus           String?   @default("pending") // เพิ่ม default value
+  resCreatedAt        DateTime  @default(now())
   resPhone            String
-  deletedAt          DateTime? // เพิ่มฟิลด์ deletedAt เพื่อรองรับ soft delete
-  customer           Customer  @relation(fields: [Customer_customerID], references: [customerID])
-  table              Tables    @relation(fields: [Tables_tabID], references: [tabID])
+  deletedAt           DateTime? // เพิ่มฟิลด์ deletedAt เพื่อรองรับ soft delete
+  customer            Customer  @relation(fields: [Customer_customerID], references: [customerID])
+  table               Tables    @relation(fields: [Tables_tabID], references: [tabID])
   Customer_customerID Int
-  Tables_tabID       Int
+  Tables_tabID        Int
 }
 
 model Employee {
-  empID     Int      @id @default(autoincrement())
-  empFname  String
-  empLname  String
-  empPhone  String
-  position  String
-  salary    Float
-  orders    Orders[]
-  stockIns  Stock_In[]
+  empID    Int        @id @default(autoincrement())
+  empFname String
+  empLname String
+  empPhone String
+  position String
+  salary   Float
+  orders   Orders[]
+  stockIns Stock_In[]
 
   TimeScription TimeScription[]
 
@@ -59,99 +59,98 @@ model Employee {
 }
 
 model Orders {
-  orderID                  Int           @id @default(autoincrement())
-  orderItemId              String        @unique  // เพิ่มฟิลด์นี้สำหรับ UUID
+  orderID                  Int         @id @default(autoincrement())
+  orderItemId              String      @unique // เพิ่มฟิลด์นี้สำหรับ UUID
   orderStatus              String?
-  orderCreatedAt           DateTime      @default(now())
-  totalCustomerCount       Int           @default(0)
-  qrCode                   String?       // เก็บ URL เช่น http://localhost:3000/user/menu/[orderItemId]
-  isDeleted      Boolean   @default(false)
-  table                    Tables        @relation(fields: [Tables_tabID], references: [tabID])
-  employee                 Employee      @relation(fields: [Employee_empID], references: [empID])
-  buffetType               BuffetTypes   @relation(fields: [BuffetTypes_buffetTypeID], references: [buffetTypeID])
+  orderCreatedAt           DateTime    @default(now())
+  totalCustomerCount       Int         @default(0)
+  qrCode                   String? // เก็บ URL เช่น http://localhost:3000/user/menu/[orderItemId]
+  isDeleted                Boolean     @default(false)
+  table                    Tables      @relation(fields: [Tables_tabID], references: [tabID])
+  employee                 Employee    @relation(fields: [Employee_empID], references: [empID])
+  buffetType               BuffetTypes @relation(fields: [BuffetTypes_buffetTypeID], references: [buffetTypeID])
   bill                     Bill?
   Tables_tabID             Int
   Employee_empID           Int
   BuffetTypes_buffetTypeID Int
-  orderItems               OrderItem[]   // เปลี่ยนชื่อเป็น OrderItem (uppercase) เพื่อให้สอดคล้องกับ convention
+  orderItems               OrderItem[] // เปลี่ยนชื่อเป็น OrderItem (uppercase) เพื่อให้สอดคล้องกับ convention
 }
 
 model BuffetTypes {
-  buffetTypeID     Int           @id @default(autoincrement())
-  buffetTypePrice  Int
-  buffetTypesName  String        @unique
-  menuItems        MenuItems[]
-  orders           Orders[]
+  buffetTypeID    Int         @id @default(autoincrement())
+  buffetTypePrice Int
+  buffetTypesName String      @unique
+  menuItems       MenuItems[]
+  orders          Orders[]
 }
 
 model MenuItems {
-  menuItemsID              Int           @id @default(autoincrement())
+  menuItemsID              Int         @id @default(autoincrement())
   menuItemNameTHA          String
   menuItemNameENG          String
   menuItemsPrice           Int
   itemImage                String
   description              String?
-  menuItemCreateAt         DateTime      @default(now())
+  menuItemCreateAt         DateTime    @default(now())
   category                 String
-  buffetType               BuffetTypes   @relation(fields: [BuffetTypes_buffetTypeID], references: [buffetTypeID])
+  buffetType               BuffetTypes @relation(fields: [BuffetTypes_buffetTypeID], references: [buffetTypeID])
   BuffetTypes_buffetTypeID Int
   orderItems               OrderItem[]
 }
 
 model OrderItem {
-  id                      String        @id @default(uuid()) // เพิ่ม id เป็น UUID
-  Orders_orderID          Int
-  MenuItems_menuItemsID   Int
-  Quantity                Int
-  menuStatus              String        @default("PENDING") // เพิ่มฟิลด์นี้ (ค่าที่เป็นไปได้: "PENDING", "COOKING", "SERVED", "CANCELLED")
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  order                   Orders        @relation(fields: [Orders_orderID], references: [orderID])
-  menuItem                MenuItems     @relation(fields: [MenuItems_menuItemsID], references: [menuItemsID])
+  id                    String    @id @default(uuid()) // เพิ่ม id เป็น UUID
+  Orders_orderID        Int
+  MenuItems_menuItemsID Int
+  Quantity              Int
+  menuStatus            String    @default("PENDING") // เพิ่มฟิลด์นี้ (ค่าที่เป็นไปได้: "PENDING", "COOKING", "SERVED", "CANCELLED")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  order                 Orders    @relation(fields: [Orders_orderID], references: [orderID])
+  menuItem              MenuItems @relation(fields: [MenuItems_menuItemsID], references: [menuItemsID])
 }
 
 model Bill {
-  billID          Int      @id @default(autoincrement())
-  vat             Int
-  paymentStatus   String?
-  netAmount       Float
-  grandTotal      Float
-  discount        Float?
-  totalAmount     Float
-  billCreateAt    DateTime @default(now())
-  billStatus      String
-  Orders_orderID  Int      @unique
-  order           Orders   @relation(fields: [Orders_orderID], references: [orderID])
-  payment         Payment?
+  billID         Int      @id @default(autoincrement())
+  vat            Int
+  paymentStatus  String?
+  netAmount      Float
+  grandTotal     Float
+  discount       Float?
+  totalAmount    Float
+  billCreateAt   DateTime @default(now())
+  billStatus     String
+  Orders_orderID Int      @unique
+  order          Orders   @relation(fields: [Orders_orderID], references: [orderID])
+  payment        Payment?
 }
 
 model Payment {
-  paymentID     Int      @id @default(autoincrement())
-  paymentTypes  String?
-  totalAmount   Float
-  Bill_billID   Int      @unique
-  bill          Bill     @relation(fields: [Bill_billID], references: [billID])
-  paymentDatetime   DateTime @default(now())
+  paymentID       Int      @id @default(autoincrement())
+  paymentTypes    String?
+  totalAmount     Float
+  Bill_billID     Int      @unique
+  bill            Bill     @relation(fields: [Bill_billID], references: [billID])
+  paymentDatetime DateTime @default(now())
 }
 
 model Stock {
-  stockID        Int     @id @default(autoincrement())
-  ingredientName String  @unique
+  stockID        Int               @id @default(autoincrement())
+  ingredientName String            @unique
   costPrice      Float
   Unit           String
-  Quantity       Float   @default(0)
-  minQuantity    Float  @default(0)
+  Quantity       Float             @default(0)
+  minQuantity    Float             @default(0)
   LastUpdated    DateTime
-  imageUrl     String?
-  isDeleted      Boolean @default(false)  // เพิ่มฟิลด์ใหม่
-  deletedAt      DateTime?  // เพิ่มฟิลด์เก็บเวลาที่ลบ
+  imageUrl       String?
+  isDeleted      Boolean           @default(false) // เพิ่มฟิลด์ใหม่
+  deletedAt      DateTime? // เพิ่มฟิลด์เก็บเวลาที่ลบ
   timeScription  TimeScription[]
   stockInDetail  Stock_In_Detail[]
-
 }
 
 model TimeScription {
-  TimeScriptionID Int      @id @default(autoincrement())
+  TimeScriptionID Int       @id @default(autoincrement())
   Employee_empID  Int
   Stock_stockID   Int
   tsCreatedAt     DateTime?
@@ -161,39 +160,37 @@ model TimeScription {
 
   employee Employee @relation(fields: [Employee_empID], references: [empID])
   stock    Stock    @relation(fields: [Stock_stockID], references: [stockID])
-  
+
   // เพิ่ม indexes เพื่อประสิทธิภาพในการค้นหา
   @@index([Employee_empID])
   @@index([Stock_stockID])
 }
 
-
 model Stock_In {
-  stockInID       Int      @id @default(autoincrement())
+  stockInID       Int       @id @default(autoincrement())
   stockInDateTime DateTime
   totalPrice      Float
-  Employee_empID Int
-  note String?
-  isCanceled     Boolean  @default(false)    // เพิ่มฟิลด์สถานะการยกเลิก
-  canceledAt     DateTime?                   // เพิ่มเวลาที่ยกเลิก
-  cancelNote     String?                     // เพิ่มหมายเหตุการยกเลิก
-  canceledBy     Int?                  // เพิ่มรหัสพนักงานที่ยกเลิก
+  Employee_empID  Int
+  note            String?
+  isCanceled      Boolean   @default(false) // เพิ่มฟิลด์สถานะการยกเลิก
+  canceledAt      DateTime? // เพิ่มเวลาที่ยกเลิก
+  cancelNote      String? // เพิ่มหมายเหตุการยกเลิก
+  canceledBy      Int? // เพิ่มรหัสพนักงานที่ยกเลิก
 
-  canceledByEmployee Employee? @relation("CanceledByEmployee", fields: [canceledBy], references: [empID])
-  employee        Employee @relation(fields: [Employee_empID], references: [empID])
-  stockInDetail   Stock_In_Detail[]
-
+  canceledByEmployee Employee?         @relation("CanceledByEmployee", fields: [canceledBy], references: [empID])
+  employee           Employee          @relation(fields: [Employee_empID], references: [empID])
+  stockInDetail      Stock_In_Detail[]
 }
 
 model Stock_In_Detail {
   stockInDetailID Int      @id @default(autoincrement())
-  stockIn        Stock_In  @relation(fields: [Stock_In_stockInID], references: [stockInID])
-  stock          Stock     @relation(fields: [Stock_stockID], references: [stockID])
-  ingredientName String
-  quantity       Float
-  unit           String
-  pricePerUnit   Float
-  totalPrice     Float
+  stockIn         Stock_In @relation(fields: [Stock_In_stockInID], references: [stockInID])
+  stock           Stock    @relation(fields: [Stock_stockID], references: [stockID])
+  ingredientName  String
+  quantity        Float
+  unit            String
+  pricePerUnit    Float
+  totalPrice      Float
 
   Stock_In_stockInID Int
   Stock_stockID      Int
