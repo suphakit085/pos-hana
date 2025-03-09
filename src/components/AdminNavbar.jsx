@@ -30,9 +30,8 @@ function AdminNavbar() {
     <nav>
       <div className='container mx-auto px-5 pt-3'>
         <ul>
-          <Link href="/admin/dashboard/"><li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full ${isActive('/admin/dashboard') ? 'bg-[#FFECF5] text-black' : ''}`}><GoHomeFill className="mr-3 text-lg" />รายงานผล</li></Link>
-          <Link href="/admin/que/"><li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full ${isActive('/admin/que') ? 'bg-[#FFECF5] text-black' : ''}`}><FaInbox className="mr-3" />การจอง</li></Link>
           <Link href="/admin/tables/"><li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full ${isActive('/admin/tables') ? 'bg-[#FFECF5] text-black' : ''}`}><MdTableBar className="mr-2.5 text-lg" />จัดการโต๊ะ</li></Link>
+          <Link href="/admin/que/"><li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full ${isActive('/admin/que') ? 'bg-[#FFECF5] text-black' : ''}`}><FaInbox className="mr-3" />การจอง</li></Link>
           <Link href="/admin/order/"><li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full ${isActive('/admin/order') ? 'bg-[#FFECF5] text-black' : ''}`}><FaClipboardList className="mr-3 text-lg" />ออเดอร์</li></Link>
           <li className={`flex items-center py-4 px-7 my-2 hoveradminmenu rounded-full cursor-pointer relative ${isActive('/admin/stock') ? 'bg-[#FFECF5] text-black' : ''}`} onClick={toggleDropdown}><FaBoxArchive className="mr-3" />คลังสินค้า <FaChevronUp className={`text-sm absolute top-[1.3rem] right-3 transition-transform ${isDropdownOpen ? 'rotate-0' : 'rotate-180'}`} /></li>
           {isDropdownOpen && (
