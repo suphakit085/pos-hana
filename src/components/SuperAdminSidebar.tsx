@@ -30,26 +30,6 @@ const navItems = [
     icon: <Users className="h-5 w-5" />
   },
   {
-    title: "รายงานยอดขาย",
-    href: "/superadmin/sales",
-    icon: <BarChart3 className="h-5 w-5" />
-  },
-  {
-    title: "สินค้าขายดี",
-    href: "/superadmin/top-products",
-    icon: <ShoppingCart className="h-5 w-5" />
-  },
-  {
-    title: "การเงิน",
-    href: "/superadmin/finance",
-    icon: <DollarSign className="h-5 w-5" />
-  },
-  {
-    title: "จัดการร้าน",
-    href: "/superadmin/store",
-    icon: <Store className="h-5 w-5" />
-  },
-  {
     title: "ตั้งค่า",
     href: "/superadmin/settings",
     icon: <Settings className="h-5 w-5" />

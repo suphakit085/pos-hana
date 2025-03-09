@@ -9,81 +9,138 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const branch = url.searchParams.get('branch') || 'all';
     
-    // ข้อมูลยอดขายรายชั่วโมง
-    const hourlySales = Array(24).fill(0).map((_, index) => ({
-      day: String(index).padStart(2, '0'),
-      sales: 0
-    }));
-    
-    // ข้อมูลยอดขายรายวันในสัปดาห์
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const dailySales = daysOfWeek.map(day => ({
-      day,
-      sales: 0
-    }));
-    
-    // ดึงข้อมูลบิลทั้งหมดในช่วง 7 วันล่าสุด
-    const sevenDaysAgo = subDays(new Date(), 7);
-    const billsQuery = {
+    // ดึงข้อมูลจำนวนออเดอร์ในแต่ละสถานะ
+    const completedOrders = await prisma.orders.count({
       where: {
+        isDeleted: false,
+        orderStatus: 'CLOSED',
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    const pendingOrders = await prisma.orders.count({
+      where: {
+        isDeleted: false,
+        orderStatus: 'PENDING',
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    const cancelledOrders = await prisma.orders.count({
+      where: {
+        isDeleted: false,
+        orderStatus: 'CANCELLED',
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    // ดึงข้อมูลมูลค่าออเดอร์ในแต่ละสถานะ
+    const completedSales = await prisma.bill.aggregate({
+      _sum: {
+        totalAmount: true
+      },
+      where: {
+        paymentStatus: 'COMPLETED',
         billStatus: 'PAID',
-        billCreateAt: {
-          gte: sevenDaysAgo
+        order: {
+          orderStatus: 'CLOSED'
         },
         ...(branch !== 'all' && {
-          order: {
-            // สามารถเพิ่มเงื่อนไขสาขาตรงนี้ เช่น
-            // branch: branch
-          }
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    const pendingSales = await prisma.bill.aggregate({
+      _sum: {
+        totalAmount: true
+      },
+      where: {
+        paymentStatus: {
+          not: 'COMPLETED'
+        },
+        order: {
+          orderStatus: 'PENDING'
+        },
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    const cancelledSales = await prisma.bill.aggregate({
+      _sum: {
+        totalAmount: true
+      },
+      where: {
+        order: {
+          orderStatus: 'CANCELLED'
+        },
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
+        })
+      }
+    });
+    
+    // ดึงข้อมูลออเดอร์ 7 วันล่าสุด
+    const last7Days = subDays(new Date(), 7);
+    
+    const recentOrders = await prisma.orders.findMany({
+      where: {
+        isDeleted: false,
+        orderCreatedAt: {
+          gte: startOfDay(last7Days)
+        },
+        ...(branch !== 'all' && {
+          // เพิ่มเงื่อนไขสาขาถ้าไม่ใช่ 'all'
         })
       },
-      select: {
-        billCreateAt: true,
-        totalAmount: true
-      }
-    };
-    
-    const bills = await prisma.bill.findMany(billsQuery);
-    
-    // วนลูปเพื่อนับยอดขายตามชั่วโมงและวัน
-    bills.forEach(bill => {
-      const billDate = new Date(bill.billCreateAt);
-      const hour = billDate.getHours();
-      const dayOfWeek = billDate.getDay(); // 0 = Sunday, 1 = Monday, ...
-      
-      // เพิ่มยอดขายตามชั่วโมง
-      hourlySales[hour].sales += bill.totalAmount;
-      
-      // เพิ่มยอดขายตามวัน
-      dailySales[dayOfWeek].sales += bill.totalAmount;
+      include: {
+        employee: true,
+        table: true,
+        buffetType: true,
+        bill: true
+      },
+      orderBy: {
+        orderCreatedAt: 'desc'
+      },
+      take: 50
     });
-
-    // หากไม่มีข้อมูลจริง ให้ใช้ข้อมูลตัวอย่าง
-    if (bills.length === 0) {
-      // ตัวอย่างข้อมูลยอดขายรายชั่วโมง
-      hourlySales[11].sales = 800;
-      hourlySales[12].sales = 1200;
-      hourlySales[13].sales = 1800;
-      hourlySales[14].sales = 1400;
-      hourlySales[15].sales = 1000;
-      hourlySales[16].sales = 4200;
-      hourlySales[17].sales = 3500;
-      hourlySales[18].sales = 3200;
-      hourlySales[19].sales = 5000;
-      hourlySales[20].sales = 8000;
-      
-      // ตัวอย่างข้อมูลยอดขายรายวัน
-      dailySales[0].sales = 30000; // Sunday
-    }
+    
+    // แปลงข้อมูลให้เรียบง่ายสำหรับการส่งผ่าน API
+    const formattedOrders = recentOrders.map(order => ({
+      orderID: order.orderID,
+      orderItemId: order.orderItemId,
+      orderStatus: order.orderStatus,
+      orderCreatedAt: format(new Date(order.orderCreatedAt), 'yyyy-MM-dd HH:mm:ss'),
+      tableID: order.Tables_tabID,
+      tableName: order.table ? order.table.tabTypes : `โต๊ะ ${order.Tables_tabID}`,
+      employeeName: order.employee ? `${order.employee.empFname} ${order.employee.empLname}` : 'ไม่ระบุ',
+      buffetType: order.buffetType ? order.buffetType.buffetTypesName : 'ไม่ระบุ',
+      totalCustomerCount: order.totalCustomerCount,
+      totalAmount: order.bill ? order.bill.totalAmount : 0,
+      isPaid: order.bill ? (order.bill.paymentStatus === 'COMPLETED') : false
+    }));
     
     return NextResponse.json({
-      hourlySales,
-      dailySales
+      completedOrders: completedOrders || 0,
+      pendingOrders: pendingOrders || 0,
+      cancelledOrders: cancelledOrders || 0,
+      completedSales: completedSales._sum.totalAmount || 0,
+      pendingSales: pendingSales._sum.totalAmount || 0,
+      cancelledSales: cancelledSales._sum.totalAmount || 0,
+      recentOrders: formattedOrders
     });
   } catch (error) {
-    console.error("Error fetching sales by time data:", error);
+    console.error("Error fetching orders data:", error);
     return NextResponse.json(
-      { error: "Failed to fetch sales by time data" },
+      { error: "Failed to fetch orders data" },
       { status: 500 }
     );
   }
