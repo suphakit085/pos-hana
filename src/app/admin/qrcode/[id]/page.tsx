@@ -13,10 +13,11 @@ interface OrderData {
   tabName?: string;
 }
 
-export default function QRCodePage({ params }: { params: { id: string } }) {
+export default function QRCodePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  // ใช้ destructuring เพื่อแกะค่า id จาก params
-  const { id } = params;
+  // ใช้ React.use() เพื่อแกะค่า params ที่เป็น Promise
+  const unwrappedParams = React.use(params);
+  const { id } = unwrappedParams;
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -965,7 +965,7 @@ const OrderPage = () => {
                           // ถ้ามี menuItem ใน item ให้ใช้ข้อมูลจาก item โดยตรง
                           if (item.menuItem) {
                             return (
-                              <div key={`${order.orderID}-${item.menuItemID}`} className="flex justify-between items-center">
+                              <div key={`${order.orderID}-${item.menuItemID}-with-menuItem`} className="flex justify-between items-center">
                                 <div className="flex-1">
                                   <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
                                     {item.menuItem.NameTHA} x {item.quantity}
@@ -986,7 +986,7 @@ const OrderPage = () => {
                           // ถ้าไม่มี menuItem ใน item ให้ค้นหาจาก menuItems
                           const menuItem = menuItems.find(m => m.menuItemID === item.menuItemID);
                           return menuItem ? (
-                            <div key={`${order.orderID}-${item.menuItemID}`} className="flex justify-between items-center">
+                            <div key={`${order.orderID}-${item.menuItemID}-from-menuItems`} className="flex justify-between items-center">
                               <div className="flex-1">
                                 <span className={isItemCancelled ? 'line-through text-gray-500' : ''}>
                                   {menuItem.NameTHA} x {item.quantity}
