@@ -3,6 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ProductCategoryPieChart from '@/components/SuperAdmin/ProductCategoryPieChart';
+import TopSellingPieChart from '@/components/SuperAdmin/TopSellingPieChart';
+import PaymentMethodsSummary from '@/components/SuperAdmin/PaymentMethodsSummary';
 import {
   Select,
   SelectContent,
@@ -12,13 +15,13 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
   Line
@@ -75,7 +78,7 @@ export default function SuperadminDashboard() {
     cancelledItems: 0,
     total: 0
   });
-  
+
   // รูปแบบตัวเลขเป็นเงินบาท
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('th-TH', {
@@ -98,7 +101,7 @@ export default function SuperadminDashboard() {
           setTotalSales(salesData.totalSales || 0);
           setCostAmount(salesData.totalCosts || 0);
           setProfitAmount(salesData.totalProfit || 0);
-          
+
           // คำนวณเปอร์เซ็นต์ต้นทุนและกำไร
           if (salesData.totalSales > 0) {
             const costPercentage = (salesData.totalCosts / salesData.totalSales) * 100;
@@ -107,7 +110,7 @@ export default function SuperadminDashboard() {
             setProfitPercent(parseFloat(profitPercentage.toFixed(2)));
           }
         }
-        
+
         // 2. ดึงข้อมูลออเดอร์
         const ordersResponse = await fetch('/api/superadmin/orders');
         if (ordersResponse.ok) {
@@ -119,7 +122,7 @@ export default function SuperadminDashboard() {
           setPendingSales(ordersData.pendingSales || 0);
           setCancelledSales(ordersData.cancelledSales || 0);
         }
-        
+
         // 3. ดึงข้อมูลยอดขายตามช่วงเวลา
         const timeSeriesResponse = await fetch('/api/superadmin/salesbytime');
         if (timeSeriesResponse.ok) {
@@ -127,27 +130,27 @@ export default function SuperadminDashboard() {
           setDailySalesData(timeSeriesData.hourlySales || []);
           setWeeklySalesData(timeSeriesData.dailySales || []);
         }
-        
+
         // 4. ดึงข้อมูลสินค้า
         const productsResponse = await fetch('/api/superadmin/products');
         if (productsResponse.ok) {
           const productsData = await productsResponse.json();
-          
+
           // 4.1 สถิติสินค้า
           setProductStats({
             totalProducts: productsData.totalProducts || 0,
             availableProducts: productsData.availableProducts || 0,
-            percentAvailable: productsData.percentAvailable || 0,
+            percentAvailable: parseFloat(productsData.percentAvailable.toFixed(2)) || 0,
             bestSellingProduct: productsData.bestSellingProduct?.name || 'ไม่มีข้อมูล',
-            bestSellingProductPercent: productsData.bestSellingProduct?.percent || 0,
+            bestSellingProductPercent: parseFloat(productsData.bestSellingProduct?.percent.toFixed(2)) || 0,
             bestCategory: productsData.bestCategory?.name || 'ไม่มีข้อมูล',
-            bestCategoryPercent: productsData.bestCategory?.percent || 0
+            bestCategoryPercent: parseFloat(productsData.bestCategory?.percent.toFixed(2)) || 0
           });
-          
+
           // 4.2 สินค้าขายดี
           setTopProducts(productsData.topProducts || []);
         }
-        
+
         // 5. ดึงข้อมูลลูกค้า
         const customersResponse = await fetch('/api/superadmin/customers');
         if (customersResponse.ok) {
@@ -158,7 +161,7 @@ export default function SuperadminDashboard() {
             averageBillAmount: customersData.averageBillAmount || 0
           });
         }
-        
+
         // 6. ดึงข้อมูลโต๊ะ
         const tablesResponse = await fetch('/api/superadmin/tables');
         if (tablesResponse.ok) {
@@ -172,7 +175,7 @@ export default function SuperadminDashboard() {
             maxOrdersPerTable: tablesData.maxOrdersPerTable || 0
           });
         }
-        
+
         // 7. ดึงข้อมูลกิจกรรมพนักงาน
         const staffResponse = await fetch('/api/superadmin/staff');
         if (staffResponse.ok) {
@@ -189,18 +192,18 @@ export default function SuperadminDashboard() {
             total: staffData.total || 0
           });
         }
-        
+
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error("ไม่สามารถโหลดข้อมูลแดชบอร์ดได้");
-        
+
         // กรณีที่ไม่สามารถโหลดข้อมูลได้ ให้ใช้ข้อมูลตัวอย่าง (เพื่อการพัฒนา)
         setMockData();
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchDashboardData();
   }, [selectedBranch]);
 
@@ -215,7 +218,7 @@ export default function SuperadminDashboard() {
     const total = completedOrders + pendingOrders + cancelledOrders;
     return total > 0 ? Math.round((completedOrders / total) * 100) : 0;
   };
-  
+
   // ตั้งค่าข้อมูลตัวอย่างในกรณีไม่สามารถโหลดข้อมูลจริงได้
   const setMockData = () => {
     // 1. ยอดขายและกำไร
@@ -224,7 +227,7 @@ export default function SuperadminDashboard() {
     setProfitAmount(19517);
     setCostPercent(35.92);
     setProfitPercent(64.08);
-    
+
     // 2. ข้อมูลออเดอร์
     setCompletedOrders(29);
     setPendingOrders(3);
@@ -232,7 +235,7 @@ export default function SuperadminDashboard() {
     setCompletedSales(29869);
     setPendingSales(590);
     setCancelledSales(0);
-    
+
     // 3. ข้อมูลยอดขายตามช่วงเวลา
     setDailySalesData([
       { day: '00', sales: 0 }, { day: '01', sales: 0 }, { day: '02', sales: 0 },
@@ -244,13 +247,13 @@ export default function SuperadminDashboard() {
       { day: '18', sales: 3200 }, { day: '19', sales: 5000 }, { day: '20', sales: 8000 },
       { day: '21', sales: 0 }, { day: '22', sales: 0 }, { day: '23', sales: 0 }
     ]);
-    
+
     setWeeklySalesData([
       { day: 'Sun', sales: 30000 }, { day: 'Mon', sales: 0 }, { day: 'Tue', sales: 0 },
       { day: 'Wed', sales: 0 }, { day: 'Thu', sales: 0 }, { day: 'Fri', sales: 0 },
       { day: 'Sat', sales: 0 }
     ]);
-    
+
     // 4. ข้อมูลสินค้า
     setProductStats({
       totalProducts: 33,
@@ -261,7 +264,7 @@ export default function SuperadminDashboard() {
       bestCategory: 'อาหาร',
       bestCategoryPercent: 85.32
     });
-    
+
     setTopProducts([
       { id: 1, name: 'หมูสไลซ์', quantity: 77, amount: 17633 },
       { id: 2, name: 'เนื้อสไลซ์', quantity: 19, amount: 6441 },
@@ -274,14 +277,14 @@ export default function SuperadminDashboard() {
       { id: 9, name: 'ชุดน้ำจิ้ม', quantity: 7, amount: 203 },
       { id: 10, name: 'เบียร์ลีโอ', quantity: 2, amount: 170 }
     ]);
-    
+
     // 5. ข้อมูลลูกค้า
     setCustomerStats({
       totalCustomers: 106,
       averageSpendPerCustomer: 287.35,
       averageBillAmount: 951.84
     });
-    
+
     // 6. ข้อมูลโต๊ะ
     setTableStats({
       totalTablesUsed: 103,
@@ -291,7 +294,7 @@ export default function SuperadminDashboard() {
       maxTimePerTable: 2.22,
       maxOrdersPerTable: 10
     });
-    
+
     // 7. ข้อมูลกิจกรรมพนักงาน
     setStaffActivities({
       profileEdits: 0,
@@ -309,18 +312,18 @@ export default function SuperadminDashboard() {
   return (
     <div className="space-y-6">
       <Toaster richColors />
-      
+
       {/* ส่วนหัวและตัวเลือกสาขา */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">ภาพรวม</h1>
           <p className="text-gray-500">ข้อมูลรายได้และยอดขายของร้าน</p>
         </div>
-        
+
       </div>
-      
+
       {/* แจ้งเตือนล่าสุด */}
-      
+
       {loading ? (
         // แสดงสถานะกำลังโหลด
         <div className="flex items-center justify-center h-60">
@@ -337,17 +340,17 @@ export default function SuperadminDashboard() {
                   <div>
                     <h2 className="text-lg font-semibold text-gray-600 mb-2">ยอดขายสุทธิ</h2>
                     <p className="text-4xl font-bold text-green-500">{formatCurrency(totalSales)} <span className="text-base text-gray-500">บาท</span></p>
-                    
+
                     <div className="mt-8 space-y-2">
                       <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-green-400 rounded-full" 
+                        <div
+                          className="h-full bg-green-400 rounded-full"
                           style={{ width: `${profitPercent}%` }}
                         ></div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-right">
@@ -359,7 +362,7 @@ export default function SuperadminDashboard() {
                         <p className="text-lg font-semibold">-0 บาท</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-right">
                         <span className="text-sm text-gray-500">ลดท้ายบิล</span>
@@ -370,7 +373,7 @@ export default function SuperadminDashboard() {
                         <p className="text-lg font-semibold">0 บาท</p>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-right">
                         <span className="text-sm text-gray-500">ค่าจัดส่ง</span>
@@ -381,7 +384,7 @@ export default function SuperadminDashboard() {
                         <p className="text-lg font-semibold">0 บาท</p>
                       </div>
                     </div>
-                    
+
                     <div className="text-right pt-4 border-t">
                       <span className="text-sm text-gray-500">รวมสุทธิ</span>
                       <p className="text-lg font-semibold">{formatCurrency(totalSales)} บาท</p>
@@ -390,7 +393,7 @@ export default function SuperadminDashboard() {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* บัตรสรุปสถานะออเดอร์ */}
             <Card>
               <CardHeader>
@@ -400,25 +403,25 @@ export default function SuperadminDashboard() {
                 <div className="flex items-center justify-center mb-6">
                   <div className="relative w-40 h-40">
                     <svg className="w-full h-full" viewBox="0 0 100 100">
-                      <circle 
-                        className="text-gray-100" 
-                        strokeWidth="10" 
-                        stroke="currentColor" 
-                        fill="transparent" 
-                        r="40" 
-                        cx="50" 
-                        cy="50" 
+                      <circle
+                        className="text-gray-100"
+                        strokeWidth="10"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
                       />
-                      <circle 
-                        className="text-green-500" 
-                        strokeWidth="10" 
+                      <circle
+                        className="text-green-500"
+                        strokeWidth="10"
                         strokeDasharray={`${calculateCompletionRate() * 2.51} 251`}
-                        strokeLinecap="round" 
-                        stroke="currentColor" 
-                        fill="transparent" 
-                        r="40" 
-                        cx="50" 
-                        cy="50" 
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="40"
+                        cx="50"
+                        cy="50"
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -427,7 +430,7 @@ export default function SuperadminDashboard() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center border-r">
                     <div className="flex items-center justify-center gap-1">
@@ -437,7 +440,7 @@ export default function SuperadminDashboard() {
                     <p className="text-3xl font-bold text-center">{completedOrders} <span className="text-xs">บิล</span></p>
                     <p className="text-xs text-gray-500">{formatCurrency(completedSales)} บาท</p>
                   </div>
-                  
+
                   <div className="text-center border-r">
                     <div className="flex items-center justify-center gap-1">
                       <span className="w-3 h-3 rounded-full bg-amber-500"></span>
@@ -446,35 +449,18 @@ export default function SuperadminDashboard() {
                     <p className="text-3xl font-bold text-center">{pendingOrders} <span className="text-xs">บิล</span></p>
                     <p className="text-xs text-gray-500">{formatCurrency(pendingSales)} บาท</p>
                   </div>
-                  
-                  
+
+
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* บัตรสรุปวิธีชำระเงิน */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">วิธีชำระเงิน</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="border rounded-md p-4 text-center">
-                    <p className="text-sm text-gray-500">เงินสด</p>
-                    <p className="text-3xl font-bold text-center mt-2">0 <span className="text-xs">บาท</span></p>
-                    <p className="text-xs text-gray-500">จำนวน 0 บิล</p>
-                  </div>
-                  
-                  <div className="border rounded-md p-4 text-center">
-                    <p className="text-sm text-gray-500">ค้างชำระ</p>
-                    <p className="text-3xl font-bold text-center mt-2">0 <span className="text-xs">บาท</span></p>
-                    <p className="text-xs text-gray-500">จำนวน 0 บิล</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <PaymentMethodsSummary />
+
+            
           </div>
-          
+
           {/* กราฟข้อมูลยอดขาย */}
           <Card>
             <CardHeader className="pb-2">
@@ -487,7 +473,7 @@ export default function SuperadminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="day" />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value) => [`${value.toLocaleString()} บาท`, 'ยอดขาย']}
                       labelFormatter={(value) => `เวลา ${value}:00 น.`}
                     />
@@ -497,7 +483,7 @@ export default function SuperadminDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* กราฟยอดขายรายวันในสัปดาห์ */}
           <Card>
             <CardHeader className="pb-2">
@@ -510,7 +496,7 @@ export default function SuperadminDashboard() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="day" />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value) => [`${value.toLocaleString()} บาท`, 'ยอดขาย']}
                     />
                     <Bar dataKey="sales" fill="#4CAF50" barSize={35} />
@@ -519,14 +505,19 @@ export default function SuperadminDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* แถวบัตรข้อมูลสินค้า */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* บัตรข้อมูลสินค้า */}
             <Card>
               <CardHeader className="pb-2 flex justify-between items-center">
                 <CardTitle className="text-lg">สินค้า</CardTitle>
-                <Button className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs">ดูเพิ่มเติม</Button>
+                <Button
+                  className="bg-teal-500 hover:bg-teal-600 h-8 px-3 py-1 text-xs"
+                  onClick={() => window.location.href = '/superadmin/products'}
+                >
+                  ดูเพิ่มเติม
+                </Button>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">
@@ -535,20 +526,20 @@ export default function SuperadminDashboard() {
                     <p className="text-xl font-bold mt-1">{productStats.availableProducts}/{productStats.totalProducts} <span className="text-xs font-normal">หน่วย</span></p>
                     <p className="text-xs text-gray-500 mt-1">คิดเป็นร้อยละ: {productStats.percentAvailable}%</p>
                   </div>
-                  
+
                   <div className="bg-gray-50 p-4 rounded-md text-center">
                     <p className="text-sm font-medium">สินค้าขายดี</p>
                     <p className="text-xl font-bold mt-1">{productStats.bestSellingProduct}</p>
                     <p className="text-xs text-gray-500 mt-1">คิดเป็นร้อยละ: {productStats.bestSellingProductPercent}%</p>
                   </div>
-                  
+
                   <div className="bg-gray-50 p-4 rounded-md text-center">
                     <p className="text-sm font-medium">หมวดหมู่ขายดี</p>
                     <p className="text-xl font-bold mt-1">{productStats.bestCategory}</p>
                     <p className="text-xs text-gray-500 mt-1">คิดเป็นร้อยละ: {productStats.bestCategoryPercent}%</p>
                   </div>
                 </div>
-                
+
                 <div className="mt-6">
                   <p className="text-base font-medium mb-3">10 อันดับสินค้าขายดี</p>
                   <div className="space-y-2">
@@ -556,33 +547,49 @@ export default function SuperadminDashboard() {
                       <thead>
                         <tr className="text-sm text-gray-600">
                           <th className="text-left font-medium pb-2">สินค้า</th>
-                          <th className="text-right font-medium pb-2"><span className="sr-only">จำนวน</span></th>
-                          <th className="text-right font-medium pb-2"><span className="sr-only">ยอดขาย</span></th>
+                          <th className="text-right font-medium pb-2">จำนวน</th>
+                          <th className="text-right font-medium pb-2">ยอดขาย (บาท)</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {topProducts.slice(0, 5).map((product, idx) => (
-                          <tr key={product.id}>
-                            <td className="py-1">
-                              <div className="flex items-center">
-                                <div className={`${idx < 3 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'} w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs`}>
-                                  {idx + 1}
-                                </div>
-                                <span>{product.name}</span>
+                        {loading ? (
+                          <tr>
+                            <td colSpan={3} className="text-center py-4">
+                              <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-pink-500 mr-2"></div>
+                                กำลังโหลดข้อมูล...
                               </div>
                             </td>
-                            <td className="text-right">{product.quantity}</td>
-                            <td className="text-right">{product.amount.toLocaleString()}</td>
                           </tr>
-                        ))}
+                        ) : topProducts.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="text-center py-4 text-gray-500">ไม่พบข้อมูลสินค้าขายดี</td>
+                          </tr>
+                        ) : (
+                          topProducts.slice(0, 5).map((product, idx) => (
+                            <tr key={product.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
+                              <td className="py-1">
+                                <div className="flex items-center">
+                                  <div className={`${idx < 3 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'} w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs`}>
+                                    {idx + 1}
+                                  </div>
+                                  <span className="truncate max-w-[180px]">{product.name}</span>
+                                </div>
+                              </td>
+                              <td className="text-right">{product.quantity.toLocaleString()}</td>
+                              <td className="text-right">{product.amount.toLocaleString()}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
-            
+
+            {/* กราฟวงกลมแสดงสัดส่วนสินค้าขายดี */}
+            <TopSellingPieChart loading={loading} topProducts={topProducts} />
           </div>
         </>
       )}
