@@ -1,3 +1,4 @@
+//app/user/menu/[id]/page.tsx
 "use client";
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -530,6 +531,11 @@ const OrderPage = () => {
       }
     }
   }, [tableId]);
+  
+    // ล้าง cookies ที่เกี่ยวข้องกับการเข้าถึง admin เมื่อเข้าหน้า user menu
+   
+    // ...โค้ดอื่นๆ ที่มีอยู่แล้ว
+  
 
   // เชื่อมต่อกับ Server-Sent Events (SSE) เพื่อรับการแจ้งเตือน
   useEffect(() => {

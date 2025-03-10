@@ -102,19 +102,8 @@ export default function StaffPage() {
       console.error('Error fetching employees:', error);
       toast.error('ไม่สามารถโหลดข้อมูลพนักงานได้');
       setLoading(false);
-      
-      // For demo purpose, let's create some mock data
-      const mockEmployees: Employee[] = [
-        { empID: 1, empFname: 'สมชาย', empLname: 'ใจดี', empPhone: '0891234567', position: 'ผู้จัดการ', salary: 30000 },
-        { empID: 2, empFname: 'สมหญิง', empLname: 'มีสุข', empPhone: '0891234568', position: 'พนักงานเสิร์ฟ', salary: 15000 },
-        { empID: 3, empFname: 'วิชัย', empLname: 'เก่งกาจ', empPhone: '0891234569', position: 'พ่อครัว', salary: 25000 },
-        { empID: 4, empFname: 'นารี', empLname: 'สดใส', empPhone: '0891234570', position: 'แคชเชียร์', salary: 18000 },
-        { empID: 5, empFname: 'ประพันธ์', empLname: 'คล่องแคล่ว', empPhone: '0891234571', position: 'พนักงานทำความสะอาด', salary: 12000 },
-      ];
-      
-      setEmployees(mockEmployees);
-      setFilteredEmployees(mockEmployees);
-      setLoading(false);
+      setEmployees([]);
+      setFilteredEmployees([]);
     }
   };
   
@@ -178,27 +167,20 @@ export default function StaffPage() {
     }
     
     try {
-      // In a real application, you would send a POST request to your API
-      // const response = await fetch('/api/employees', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
+      const response = await fetch('/api/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
       
-      // if (!response.ok) {
-      //   throw new Error('Failed to add employee');
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add employee');
+      }
       
-      // const newEmployee = await response.json();
-      
-      // For demo purpose, let's simulate adding a new employee
-      const newEmployee: Employee = {
-        ...formData,
-        empID: employees.length > 0 ? Math.max(...employees.map(e => e.empID)) + 1 : 1
-      };
-      
+      const newEmployee = await response.json();
       setEmployees([...employees, newEmployee]);
       setIsAddModalOpen(false);
       toast.success('เพิ่มพนักงานใหม่สำเร็จ');

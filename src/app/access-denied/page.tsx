@@ -12,10 +12,10 @@ export default function AccessDenied() {
           คุณไม่มีสิทธิ์เข้าถึงหน้านี้ เฉพาะเจ้าของร้านเท่านั้นที่สามารถเข้าถึงได้
         </p>
         <div className="flex justify-center gap-4">
-          <Link href="/admin/dashboard">
+          <Link href="/admin/tables">
             <Button variant="outline">กลับสู่หน้า Admin</Button>
           </Link>
-          <Link href="/login">
+          <Link href="/">
             <Button className="bg-[#FFB8DA] hover:bg-[#fcc6e0]">เข้าสู่ระบบใหม่</Button>
           </Link>
         </div>

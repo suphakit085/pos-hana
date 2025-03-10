@@ -3,22 +3,44 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // กำหนดรายชื่อเส้นทางที่ต้องการป้องกัน
-const PROTECTED_ROUTES = ['/superadmin', '/superadmin/dashboard', '/superadmin/sales'];
+const SUPERADMIN_ROUTES = ['/superadmin', '/superadmin/dashboard', '/superadmin/sales'];
+const ADMIN_ROUTES = ['/admin', '/admin/tables', '/admin/stock'];
 
-// กำหนดรหัสเจ้าของร้าน (ในระบบจริงควรใช้ระบบ auth ที่มีความปลอดภัยมากกว่านี้)
-const OWNER_ID = '1'; // รหัส ID ของเจ้าของร้าน
+// สิทธิ์การเข้าถึง
+type UserRole = 'superadmin' | 'admin';
+
+// ฟังก์ชันตรวจสอบสิทธิ์การเข้าถึง
+function hasAccess(userRole: UserRole | undefined, path: string): boolean {
+  // ถ้าไม่มี role ไม่มีสิทธิ์เข้าถึงเลย
+  if (!userRole) return false;
+  
+  // superadmin สามารถเข้าถึงได้ทั้ง admin และ superadmin routes
+  if (userRole === 'superadmin') return true;
+  
+  // admin สามารถเข้าถึงได้เฉพาะ admin routes
+  if (userRole === 'admin') {
+    return !SUPERADMIN_ROUTES.some(route => path.startsWith(route));
+  }
+  
+  return false;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // ตรวจสอบว่า path ปัจจุบันอยู่ในรายการที่ต้องการป้องกันหรือไม่
-  if (PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
-    // ตรวจสอบว่ามี cookie หรือ session ที่เป็นของเจ้าของร้านหรือไม่
-    const userRole = request.cookies.get('userRole')?.value;
+  // ตรวจสอบว่า path ปัจจุบันเป็น protected route หรือไม่
+  const isProtectedRoute = 
+    SUPERADMIN_ROUTES.some(route => pathname.startsWith(route)) || 
+    ADMIN_ROUTES.some(route => pathname.startsWith(route));
+  
+  if (isProtectedRoute) {
+    // ดึงค่า role และ userId จาก cookies
+    const userRole = request.cookies.get('userRole')?.value as UserRole | undefined;
     const userId = request.cookies.get('userId')?.value;
     
-    // ถ้าไม่ใช่เจ้าของร้าน ให้ redirect ไปหน้า login หรือหน้า access denied
-    if (userRole !== 'superadmin' || userId !== OWNER_ID) {
+    // ตรวจสอบว่ามีสิทธิ์เข้าถึงเส้นทางนี้หรือไม่
+    if (!hasAccess(userRole, pathname) || !userId) {
+      // ถ้าไม่มีสิทธิ์ ให้ redirect ไปหน้า access-denied
       return NextResponse.redirect(new URL('/access-denied', request.url));
     }
   }
@@ -28,5 +50,5 @@ export function middleware(request: NextRequest) {
 
 // ระบุเส้นทางที่ middleware นี้จะทำงาน
 export const config = {
-  matcher: ['/superadmin/:path*']
+  matcher: ['/superadmin/:path*', '/admin/:path*']
 };
