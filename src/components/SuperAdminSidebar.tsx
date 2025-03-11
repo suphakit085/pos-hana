@@ -106,7 +106,7 @@ export default function SuperAdminSidebar() {
           {/* Footer */}
           <div className="p-4 border-t">
             <Link 
-              href="/login"
+              href="/"
               className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-5 w-5" />

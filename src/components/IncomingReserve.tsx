@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { CalendarIcon, ClockIcon, MapPinIcon, UserIcon, PhoneIcon } from "lucide-react"
 
 interface Reservation {
-  resID: string;
+  resID: string | number; // Accept both string and number types
   resName: string;
   resPhone: string;
   resTime: string;
@@ -50,11 +50,18 @@ export default function IncomingReserve() {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching today\'s reservations...');
       const response = await fetch('/api/reservations/today');
+      
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch today\'s reservations');
+        throw new Error(`Failed to fetch today's reservations: ${response.status}`);
       }
+      
       const data = await response.json();
+      console.log('Received reservations data:', data);
+      
       // Ensure data is an array
       setReservations(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -66,8 +73,9 @@ export default function IncomingReserve() {
     }
   };
 
-  const completeReservation = async (resID: string) => {
+  const completeReservation = async (resID: string | number) => {
     try {
+      console.log(`Completing reservation with ID: ${resID}`);
       const response = await fetch(`/api/reservations/${resID}`, {
         method: 'DELETE', // This will trigger soft delete
         headers: {
@@ -75,9 +83,14 @@ export default function IncomingReserve() {
         }
       });
 
+      console.log('Complete reservation response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to complete reservation');
+        throw new Error(`Failed to complete reservation: ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log('Complete reservation result:', result);
 
       fetchTodayReservations(); // Refresh the list after completion
     } catch (error) {

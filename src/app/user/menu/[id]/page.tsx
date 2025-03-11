@@ -27,7 +27,7 @@ interface MenuItem {
   itemImage: string;
   description: string;
   MenuItemCreatedAt: Date;
-  category: 'snack' | 'soup' | 'noodle' | 'vegetables' | 'meat' | 'beverage' | 'หมู' | 'เนื้อ';
+  category: 'snack' | 'soup' | 'noodle' | 'vegetables' | 'meat' | 'beverage' | 'หมู' | 'เนื้อ' | 'ผัก' | 'น้ำซุป' | 'ของทานเล่น';
   buffetTypeID: number;
 }
 
@@ -409,7 +409,10 @@ const categoryTranslations: Record<MenuItem['category'] | 'all', string> = {
   meat: "เนื้อ",
   beverage: "เครื่องดื่ม",
   'หมู': "หมู",
-  'เนื้อ': "เนื้อวัว"
+  'เนื้อ': "เนื้อวัว",
+  'ผัก': "ผัก",
+  'น้ำซุป': "น้ำซุป",
+  'ของทานเล่น': "ของทานเล่น"
 };
 
 const OrderPage = () => {
@@ -773,9 +776,8 @@ const OrderPage = () => {
     console.log("Meat type:", meatType);
     
     const filtered = menuItems.filter(item => {
-      // กรองตามหมวดหมู่ที่เลือก (แสดงเฉพาะหมวดหมู่ meat, หมู, เนื้อ หรือทั้งหมด)
+      // กรองตามหมวดหมู่ที่เลือก
       const categoryMatch = activeCategory === 'all' || 
-                           activeCategory === 'meat' || 
                            activeCategory === item.category;
       
       // กรองตามคำค้นหา
@@ -784,8 +786,11 @@ const OrderPage = () => {
         item.NameTHA.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.NameENG.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // กรองตามประเภทบุฟเฟต์
-      let buffetTypeMatch = true;
+      // Determine if this is a category both buffet types can access
+      const isSharedCategory = 
+        item.category === 'ผัก' || 
+        item.category === 'น้ำซุป' || 
+        item.category === 'ของทานเล่น';
       
       // ตรวจสอบว่าเป็นเมนูหมูหรือเนื้อ
       const isBeefMenu = 
@@ -798,40 +803,39 @@ const OrderPage = () => {
         item.category === 'หมู' || 
         (!isBeefMenu && item.category === 'meat');
       
+      // กรองตามประเภทบุฟเฟต์
+      let buffetTypeMatch = true;
+      
       // ถ้าไม่มีการระบุประเภทบุฟเฟต์ ให้แสดงทุกเมนู
       if (!buffetTypeID) {
         buffetTypeMatch = true;
       }
-      // บุฟเฟต์หมู (ID 1) แสดงเฉพาะเมนูหมู
+      // บุฟเฟต์หมู (ID 1) แสดงเฉพาะเมนูหมูและหมวดหมู่ที่ทั้งสองประเภทเข้าถึงได้
       else if (buffetTypeID === 1) {
-        buffetTypeMatch = isPorkMenu;
+        buffetTypeMatch = isPorkMenu || isSharedCategory;
       }
-      // บุฟเฟต์เนื้อ (ID 2) แสดงทั้งเมนูหมูและเนื้อ
+      // บุฟเฟต์เนื้อ (ID 2) แสดงทั้งเมนูหมู เนื้อ และหมวดหมู่ที่ทั้งสองประเภทเข้าถึงได้
       else if (buffetTypeID === 2) {
-        buffetTypeMatch = isPorkMenu || isBeefMenu;
+        buffetTypeMatch = isPorkMenu || isBeefMenu || isSharedCategory;
       }
       
-      // แสดงเฉพาะหมวดหมู่เนื้อสัตว์ (meat, หมู, เนื้อ)
-      const isMeatCategory = 
-        item.category === 'meat' || 
-        item.category === 'หมู' || 
-        item.category === 'เนื้อ';
-      
-      // กรองตามประเภทเนื้อที่เลือก
+      // กรองตามประเภทเนื้อที่เลือก (เฉพาะเมื่อดูหมวดหมู่เนื้อสัตว์)
       let meatTypeMatch = true;
-      if (meatType === 'pork') {
-        meatTypeMatch = isPorkMenu;
-      } else if (meatType === 'beef') {
-        meatTypeMatch = isBeefMenu;
+      if (activeCategory === 'หมู' || activeCategory === 'เนื้อ' || activeCategory === 'meat') {
+        if (meatType === 'pork') {
+          meatTypeMatch = isPorkMenu;
+        } else if (meatType === 'beef') {
+          meatTypeMatch = isBeefMenu;
+        }
       }
       
-      return categoryMatch && searchMatch && buffetTypeMatch && isMeatCategory && meatTypeMatch;
+      return categoryMatch && searchMatch && buffetTypeMatch && meatTypeMatch;
     });
     
     console.log("Filtered items:", filtered.length);
     return filtered;
   }, [menuItems, activeCategory, searchQuery, buffetTypeID, meatType]);
-
+  
   // แสดงข้อความเมื่อกำลังโหลดข้อมูล
   if (loading) {
     return (
@@ -895,20 +899,20 @@ const OrderPage = () => {
           <h1 className="text-2xl font-bold">เมนูอาหาร</h1>
           <p className="text-gray-600">โต๊ะ {currentTable?.tabId || tableId}</p>
           <div className="mt-2 p-2 bg-pink-50 rounded-md border border-pink-200">
-            <p className="text-gray-700">
-              <span className="font-semibold">ประเภทบุฟเฟต์:</span> {buffetTypeName || "ไม่ระบุ"}
-              {buffetTypeID === 1 && (
-                <span className="block text-sm text-pink-600 mt-1">
-                  * สามารถสั่งได้ทุกเมนูยกเว้นเมนูเนื้อวัว
-                </span>
-              )}
-              {buffetTypeID === 2 && (
-                <span className="block text-sm text-pink-600 mt-1">
-                  * สามารถสั่งได้ทุกเมนูรวมถึงเมนูเนื้อวัว
-                </span>
-              )}
-            </p>
-          </div>
+  <p className="text-gray-700">
+    <span className="font-semibold">ประเภทบุฟเฟต์:</span> {buffetTypeName || "ไม่ระบุ"}
+    {buffetTypeID === 1 && (
+      <span className="block text-sm text-pink-600 mt-1">
+        * สามารถสั่งได้เฉพาะเมนูหมู, ผัก, น้ำซุป และของทานเล่น (ไม่รวมเมนูเนื้อวัว)
+      </span>
+    )}
+    {buffetTypeID === 2 && (
+      <span className="block text-sm text-pink-600 mt-1">
+        * สามารถสั่งได้ทุกเมนูรวมถึงเมนูเนื้อวัว, หมู, ผัก, น้ำซุป และของทานเล่น
+      </span>
+    )}
+  </p>
+</div>
         </div>
         <div className="flex space-x-2">
           <Sheet>
@@ -1100,55 +1104,91 @@ const OrderPage = () => {
       </div>
 
       {/* Search and Category Filters */}
-      <div className="mb-6">
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="ค้นหาเมนูอาหาร..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex overflow-x-auto space-x-2 pb-2">
-          <Button
-            variant={activeCategory === 'all' ? 'default' : 'outline'}
-            className="whitespace-nowrap"
-            onClick={() => {
-              setActiveCategory('all');
-              setMeatType('all');
-              setSearchQuery('');
-            }}
-          >
-            ทั้งหมด
-          </Button>
+<div className="mb-6">
+  <div className="relative mb-4">
+    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+    <Input
+      placeholder="ค้นหาเมนูอาหาร..."
+      className="pl-10"
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+    />
+  </div>
+  <div className="flex overflow-x-auto space-x-2 pb-2">
+    <Button
+      variant={activeCategory === 'all' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('all');
+        setMeatType('all');
+        setSearchQuery('');
+      }}
+    >
+      ทั้งหมด
+    </Button>
           
-          {/* แสดงปุ่มหมวดหมู่หมูและเนื้อ */}
-          <Button
-            variant={meatType === 'pork' ? 'default' : 'outline'}
-            className="whitespace-nowrap"
-            onClick={() => {
-              setActiveCategory('หมู');
-              setMeatType('pork');
-              setSearchQuery('');
-            }}
-          >
-            {categoryTranslations['หมู']}
-          </Button>
+          {/* หมวดหมู่เนื้อสัตว์ */}
+    <Button
+      variant={meatType === 'pork' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('หมู');
+        setMeatType('pork');
+        setSearchQuery('');
+      }}
+    >
+      {categoryTranslations['หมู']}
+    </Button>
           
-          <Button
-            variant={meatType === 'beef' ? 'default' : 'outline'}
-            className="whitespace-nowrap"
-            onClick={() => {
-              setActiveCategory('เนื้อ');
-              setMeatType('beef');
-              setSearchQuery('');
-            }}
-          >
-            {categoryTranslations['เนื้อ']}
+    <Button
+      variant={meatType === 'beef' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('เนื้อ');
+        setMeatType('beef');
+        setSearchQuery('');
+      }}
+    >
+      {categoryTranslations['เนื้อ']}
           </Button>
         </div>
       </div>
+       {/* หมวดหมู่ที่ทั้งสองประเภทบุฟเฟต์เข้าถึงได้ */}
+    <Button
+      variant={activeCategory === 'ผัก' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('ผัก');
+        setMeatType('all');
+        setSearchQuery('');
+      }}
+    >
+      ผัก
+    </Button>
+    
+    <Button
+      variant={activeCategory === 'น้ำซุป' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('น้ำซุป');
+        setMeatType('all');
+        setSearchQuery('');
+      }}
+    >
+      น้ำซุป
+    </Button>
+    
+    <Button
+      variant={activeCategory === 'ของทานเล่น' ? 'default' : 'outline'}
+      className="whitespace-nowrap"
+      onClick={() => {
+        setActiveCategory('ของทานเล่น');
+        setMeatType('all');
+        setSearchQuery('');
+      }}
+    >
+      ของทานเล่น
+    </Button>
 
       {/* Menu Items */}
       {filteredItems.length === 0 ? (

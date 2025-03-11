@@ -73,7 +73,7 @@ export async function PATCH(
         resStatus: body.resStatus, // Use resStatus from the request body
       },
     });
-
+    console.log('Updated reservation:', updatedReservation);
     return NextResponse.json(updatedReservation);
   } catch (error) {
     console.error('Error updating reservation status:', error);

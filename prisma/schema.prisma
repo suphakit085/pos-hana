@@ -11,7 +11,6 @@ model Customer {
   customerID    Int            @id @default(autoincrement())
   firstName     String
   lastName      String
-  customerPhone String
   CustomerEmail String         @unique
   password      String
   cusCreatedAt  DateTime       @default(now())
