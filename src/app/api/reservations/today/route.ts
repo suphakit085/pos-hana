@@ -21,7 +21,7 @@ export async function GET() {
       where: {
         resDate: {
           gte: today,
-          
+          lt: tomorrow
         },
         deletedAt: null,
         resStatus: 'confirmed'

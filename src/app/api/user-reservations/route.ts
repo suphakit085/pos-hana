@@ -1,29 +1,64 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prismadb';
 
-export async function POST(request: Request) {
-  const data = await request.json();
-  const reservation = await prisma.reservations.create({
-    data: {
-      data: {
-        resName: data.resName,
-        resDate: new Date(data.resDate),
-        resTime: data.resTime,
-        numberOfPeople: parseInt(data.numberOfPeople),
-        resStatus: 'pending',
-        resPhone: data.resPhone,
-        Customer_customerID: data.customerID,
-        Tables_tabID: parseInt(data.tableId)
-      // ... your reservation data
-    }
-}});
+export async function GET(request: Request) {
+    try {
+        // Get the customer ID from the URL query parameters
+        const { searchParams } = new URL(request.url);
+        const customerID = searchParams.get('customerID');
 
-  return NextResponse.json(
-    { 
-      message: 'จองโต๊ะสำเร็จ',
-      redirectUrl: `/reservations/summary${reservation.resStatus === 'confirmed' ? 'confirmed' : 
-        reservation.resStatus === 'cancelled' ? 'cancelled' : ''}?resID=${reservation.resID}`
-    },
-    { status: 201 }
-  );
+        // If no customer ID is provided, return an error
+        if (!customerID) {
+            return NextResponse.json(
+                { message: 'กรุณาระบุรหัสลูกค้า' },
+                { status: 400 }
+            );
+        }
+
+        // Convert customerID to number
+        const customerIDNum = parseInt(customerID);
+
+        // Find reservations for the specific customer
+        const reservations = await prisma.reservations.findMany({
+            where: {
+                Customer_customerID: customerIDNum
+            },
+            include: {
+                table: {
+                    select: {
+                        tabID: true,
+                        tabTypes: true
+                    }
+                }
+            },
+            orderBy: {
+                resCreatedAt: 'desc'
+            }
+        });
+
+        // Transform the data to include proper table names
+        const formattedReservations = reservations.map(res => {
+            // สร้างชื่อโต๊ะที่เหมาะสม
+            let tableName = โต๊ะ ${res.table.tabID};
+            if (res.table.tabTypes === 'VIP') {
+                tableName = 'ห้อง VIP';
+            }
+
+            return {
+                ...res,
+                table: {
+                    ...res.table,
+                    tableName: tableName
+                }
+            };
+        });
+
+        return NextResponse.json(formattedReservations);
+    } catch (error) {
+        console.error('Error fetching reservations:', error);
+        return NextResponse.json(
+            { message: 'เกิดข้อผิดพลาดในการโหลดข้อมูล' },
+            { status: 500 }
+        );
+    }
 }

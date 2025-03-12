@@ -1,6 +1,5 @@
-﻿"use client";
-// src/app/superadmin/staff/page.tsx
-
+﻿// src/app/superadmin/staff/page.tsx
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -225,27 +224,23 @@ export default function StaffPage() {
     }
     
     try {
-      // In a real application, you would send a PUT request to your API
-      // const response = await fetch(`/api/employees/${selectedEmployee.empID}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(formData),
-      // });
+      // ส่งคำขอ PUT ไปยัง API เพื่อแก้ไขข้อมูลพนักงาน
+      const response = await fetch(`/api/employees/${selectedEmployee.empID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
       
-      // if (!response.ok) {
-      //   throw new Error('Failed to update employee');
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update employee');
+      }
       
-      // const updatedEmployee = await response.json();
+      const updatedEmployee = await response.json();
       
-      // For demo purpose, let's simulate updating an employee
-      const updatedEmployee: Employee = {
-        ...formData,
-        empID: selectedEmployee.empID
-      };
-      
+      // อัปเดตข้อมูลในสถานะ
       const updatedEmployees = employees.map(emp => 
         emp.empID === selectedEmployee.empID ? updatedEmployee : emp
       );
@@ -254,7 +249,7 @@ export default function StaffPage() {
       setIsEditModalOpen(false);
       toast.success('แก้ไขข้อมูลพนักงานสำเร็จ');
       
-      // Reset form data and selected employee
+      // รีเซ็ตข้อมูลฟอร์มและพนักงานที่เลือก
       setFormData({
         empFname: '',
         empLname: '',
@@ -280,23 +275,24 @@ export default function StaffPage() {
     if (!selectedEmployee) return;
     
     try {
-      // In a real application, you would send a DELETE request to your API
-      // const response = await fetch(`/api/employees/${selectedEmployee.empID}`, {
-      //   method: 'DELETE',
-      // });
+      // ส่งคำขอ DELETE ไปยัง API เพื่อลบข้อมูลพนักงาน
+      const response = await fetch(`/api/employees/${selectedEmployee.empID}`, {
+        method: 'DELETE',
+      });
       
-      // if (!response.ok) {
-      //   throw new Error('Failed to delete employee');
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete employee');
+      }
       
-      // For demo purpose, let's simulate deleting an employee
+      // อัปเดตข้อมูลในสถานะโดยลบพนักงานที่ถูกเลือกออก
       const updatedEmployees = employees.filter(emp => emp.empID !== selectedEmployee.empID);
       
       setEmployees(updatedEmployees);
       setIsDeleteModalOpen(false);
       toast.success('ลบข้อมูลพนักงานสำเร็จ');
       
-      // Reset selected employee
+      // รีเซ็ตพนักงานที่เลือก
       setSelectedEmployee(null);
     } catch (error) {
       console.error('Error deleting employee:', error);

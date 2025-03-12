@@ -1,4 +1,4 @@
-﻿//ฟังก์ชั่นติดต่อฐานข้อมูลทั้งหมด
+﻿﻿//ฟังก์ชั่นติดต่อฐานข้อมูลทั้งหมด
 "use server"
 import prisma from "../utils/db";
 import { StockInDetail } from "../utils/types";
@@ -379,16 +379,17 @@ export const deleteStock = async (stockID: number) => {
     // เพิ่ม console.log เพื่อตรวจสอบค่า stockID ที่ได้รับ
     console.log('Attempting to delete stock:', stockID);
 
-    // ตรวจสอบว่ามีการใช้งานใน Stock_In_Detail หรือ StockOutDetail หรือไม่
+    // ตรวจสอบว่ามีการใช้งานใน Stock_In_Detail หรือไม่
     const stockInUse = await prisma.stock_In_Detail.findFirst({
       where: { Stock_stockID: stockID }
     });
 
-    const stockOutUse = await prisma.stockOutDetail.findFirst({
-      where: { stockID }
+    // ตรวจสอบว่ามีการใช้งานใน TimeScription หรือไม่ (แทน stockOutDetail)
+    const timeScriptionUse = await prisma.timeScription.findFirst({
+      where: { Stock_stockID: stockID }
     });
 
-    if (stockInUse || stockOutUse) {
+    if (stockInUse || timeScriptionUse) {
       throw new Error("ไม่สามารถลบได้เนื่องจากมีการใช้งานในประวัติการนำเข้าหรือเบิกออก");
     }
 
@@ -512,4 +513,3 @@ export const cancelStockIn = async (
     }
   }
 };
-
