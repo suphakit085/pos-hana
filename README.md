@@ -33,66 +33,87 @@ This repository contains a web-based Point of Sale (POS) application that suppor
 
 
 ### User order in QRCode
-![order in QRCode](public/hana_pos/order-inQrcode.jpg)
+<img width="1012" height="508" alt="image" src="https://github.com/user-attachments/assets/fac2d9d5-2195-4e82-91b2-23675fa4993d" />
+
 
 ### User order history
-![order history](public/hana_pos/order-history.jpg)
+<img width="595" height="722" alt="image" src="https://github.com/user-attachments/assets/60cd2c02-9836-47f3-ae02-b0181a215653" />
+
 
 ### Order summary ingredian
-![Summary ingredian](public/hana_pos/summary-ingredian.jpg)
+<img width="595" height="725" alt="image" src="https://github.com/user-attachments/assets/c5bba125-313b-4094-b3ae-6a500b8d8fea" />
+
 
 ### Order history
-![Order history](public/hana_pos/order-history.jpg)
+<img width="597" height="725" alt="image" src="https://github.com/user-attachments/assets/81051121-8cbe-40ee-8969-451ae0de9feb" />
+
 
 ### Login staff
-![Login staff](public/hana_pos/Login-backend.jpg)
+<img width="754" height="374" alt="image" src="https://github.com/user-attachments/assets/5a2f4a2c-8114-4cbe-971a-cea8ae25614d" />
+
 
 ### Main menu staff
-![Main menu staff](public/hana_pos/Today-Reservations.jpg)
+<img width="756" height="382" alt="image" src="https://github.com/user-attachments/assets/cdfbbf5e-e73a-4a4b-82da-bf6333db829b" />
+
 
 ### Manage table
-![Manage table](public/hana_pos/order-chair.jpg)
+<img width="759" height="385" alt="image" src="https://github.com/user-attachments/assets/1538b12a-f488-4f9b-bfc6-7156ca95f2d3" />
+
 
 ### QRCode table
-![QRCode table](public/hana_pos/QRCode-order.jpg)
+<img width="756" height="383" alt="image" src="https://github.com/user-attachments/assets/4ed93f21-875a-47be-aaa1-b56f2a458fc4" />
+
 
 ### Reserve list 
-![Reserve list](public/hana_pos/reserve-list-backend.jpg)
+<img width="756" height="379" alt="image" src="https://github.com/user-attachments/assets/becc48b5-4259-4c67-be00-5aadae64aca5" />
+
 
 ### List order kitchen
-![List order kitchen](public/hana_pos/list-order-in-kitchen.jpg)
+<img width="760" height="382" alt="image" src="https://github.com/user-attachments/assets/e470b94e-7506-4445-a4fd-1d9867fb59bb" />
+
 
 ### Stock 
-![Stock](public/hana_pos/stock-ingredian.jpg)
+<img width="761" height="384" alt="image" src="https://github.com/user-attachments/assets/04b13b0c-8e9f-498f-9a48-cca0cadf4ded" />
+
 
 ### Add new ingredients
-![Add new ingredients](public/hana_pos/new-ingredian.jpg)
+<img width="760" height="402" alt="image" src="https://github.com/user-attachments/assets/aaaa26bc-c59a-4f68-ae3f-9c8aba1eae08" />
+
 
 ### Edit ingredients
-![Edit ingredients](public/hana_pos/edit-stock.jpg)
+<img width="758" height="382" alt="image" src="https://github.com/user-attachments/assets/094b1246-cd27-4519-acdb-c1bf8361cb38" />
+
 
 ### import ingredients
-![import ingredients](public/hana_pos/import-ingredian.jpg)
+<img width="757" height="389" alt="image" src="https://github.com/user-attachments/assets/b7658936-1eb8-4126-a2fe-2d72257a5290" />
+
 
 ### import history
-![import history](public/hana_pos/import-history.jpg)
+<img width="763" height="387" alt="image" src="https://github.com/user-attachments/assets/47ae9ffd-5ade-4835-9b8a-a95e9ebd419a" />
+
 
 ### Product withdrawal history
-![Product withdrawal history](public/hana_pos/Product-Withdrawal-History.jpg)
+<img width="756" height="386" alt="image" src="https://github.com/user-attachments/assets/2de0e392-8511-420d-87c1-12ecaf167825" />
+
 
 ### Payment
-![Payment](public/hana_pos/Payment.png)
+<img width="762" height="399" alt="image" src="https://github.com/user-attachments/assets/93f08506-df63-4931-b489-6adb688923e9" />
+
 
 ### receipt
-![receipt](public/hana_pos/receipt.png)
+<img width="760" height="497" alt="image" src="https://github.com/user-attachments/assets/7c73cf53-10e7-4273-81e6-a324caf11c9c" />
+
 
 ### Admin dashboard
-![Admin dashboard](public/hana_pos/admin-dashboard.jpg)
+<img width="756" height="382" alt="image" src="https://github.com/user-attachments/assets/862d6cd9-0aae-4726-b1c7-debc451f92e6" />
+
 
 ### Add employee
-![Add employee](public/hana_pos/add-employee.jpg)
+<img width="755" height="381" alt="image" src="https://github.com/user-attachments/assets/134a6986-4d3a-4dab-b40d-9498be50f5cf" />
+
 
 ### Edit employee
-![Edit employee](public/hana_pos/edit-employee-info.jpg)
+<img width="766" height="386" alt="image" src="https://github.com/user-attachments/assets/690bdfc8-d7af-46bc-9b5c-d2e6bb003b0c" />
+
 
 
