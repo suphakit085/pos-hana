@@ -5,28 +5,32 @@ This repository contains a web-based Point of Sale (POS) application that suppor
 ## Screenshots
 
 ### User Login
-![Login Frontend](public/hana_pos/Login-frontend.jpg)
+
+<img width="1009" height="504" alt="image" src="https://github.com/user-attachments/assets/9d640acd-695a-4d2b-ad0b-e6fdf5654a6f" />
 
 ### User main menu
-![Main Menu Frontend](public/hana_pos/main-menu-front.jpg)
+<img width="1010" height="513" alt="image" src="https://github.com/user-attachments/assets/8cec5110-64cc-450d-b4ad-6262efe89e01" />
 
 ### User Reserve Chair
-![Reserve Chair Frontend](public/hana_pos/reserve-chair.jpg)
+<img width="1006" height="507" alt="image" src="https://github.com/user-attachments/assets/8a8da154-1a51-4162-9c9a-0a1697e426d8" />
 
 ### User Confirm reserve
-![Confirm reserve](public/hana_pos/confirm-reserve.jpg)
+<img width="1015" height="508" alt="image" src="https://github.com/user-attachments/assets/5607918c-3212-491b-947f-0ee43a50a767" />
 
 ### User history reserve
-![History reserve](public/hana_pos/history-reserve-user.jpg)
+<img width="1013" height="508" alt="image" src="https://github.com/user-attachments/assets/87cb6294-a37e-4706-b59c-503ea369a4db" />
 
 ### User Reserve detail wait
-![Reserve detail wait](public/hana_pos/reserve-detail-wait.jpg)
+<img width="1010" height="505" alt="image" src="https://github.com/user-attachments/assets/6a69bbd2-8df0-4cda-98fd-a64909448760" />
+
 
 ### User Reserve detail confirm
-![Reserve detail confirm](public/hana_pos/reserve-detail-confirm.jpg)
+<img width="1004" height="501" alt="image" src="https://github.com/user-attachments/assets/1b68bdc3-4bd9-4cbd-b781-3dab0437a6bb" />
+
 
 ### User Reserve detail cancel
-![Reserve detail cancel](public/hana_pos/reserve-detail-cancel.jpg)
+<img width="1011" height="506" alt="image" src="https://github.com/user-attachments/assets/2b1baf9d-d8f3-440f-8438-54adf132335b" />
+
 
 ### User order in QRCode
 ![order in QRCode](public/hana_pos/order-inQrcode.jpg)
